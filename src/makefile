@@ -69,12 +69,15 @@ install:
 	cp libOpenParEMCommon.a ../lib/libOpenParEMCommon.a
 	rm -f $(HOME)/lib/libOpenParEMCommon.a
 	mv libOpenParEMCommon.a $(HOME)/lib/libOpenParEMCommon.a
+
 	rm -f $(HOME)/bin/checkErrors.sh
 	cp ../scripts/checkErrors.sh $(HOME)/bin/checkErrors.sh
-	rm -f $(HOME)/listErrors
+
+	rm -f $(HOME)/bin/listErrors
 	cp ../scripts/listErrors $(HOME)/bin/listErrors
-	rm -f $(HOME)/proj_search
-	cp ../scripts/proj_search $(HOME)/proj_search
+
+	rm -f $(HOME)/bin/proj_search
+	cp ../scripts/proj_search $(HOME)/bin/proj_search
 
 clean:
 	rm -f libOpenParEMCommon.a
