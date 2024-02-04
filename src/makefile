@@ -60,11 +60,19 @@ triplet.o: triplet.c triplet.h
 libOpenParEMCommon.a: fem.o frequencyPlan.o jobrelated.o keywordPair.o license.o mesh.o misc.o OpenParEMmaterials.o path.o petscErrorHandler.o sourcefile.o triplet.o
 	ar rcs libOpenParEMCommon.a fem.o frequencyPlan.o jobrelated.o keywordPair.o license.o mesh.o misc.o OpenParEMmaterials.o path.o petscErrorHandler.o sourcefile.o triplet.o
 
-.PHONY: all clean
-
-lib: libOpenParEMCommon.a
+.PHONY: all clean install
 
 all: libOpenParEMCommon.a
+
+install:
+	rm -f $HOME/lib/libOpenParEMCommon.a
+	mv libOpenParEMCommon.a $HOME/lib/libOpenParEMCommon.a
+	rm -f $HOME/bin/checkErrors.sh
+	cp ../scripts/checkErrors.sh $HOME/bin/checkErrors.sh
+	rm -f $HOME/listErrors
+	cp ../scripts/listErrors $HOME/bin/listErrors
+	rm -f $HOME/proj_search
+	cp ../scripts/proj_search $HOME/proj_search
 
 clean:
 	rm -f libOpenParEMCommon.a
