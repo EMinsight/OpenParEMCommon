@@ -65,14 +65,14 @@ libOpenParEMCommon.a: fem.o frequencyPlan.o jobrelated.o keywordPair.o license.o
 all: libOpenParEMCommon.a
 
 install:
-	rm -f $HOME/lib/libOpenParEMCommon.a
-	mv libOpenParEMCommon.a $HOME/lib/libOpenParEMCommon.a
-	rm -f $HOME/bin/checkErrors.sh
-	cp ../scripts/checkErrors.sh $HOME/bin/checkErrors.sh
-	rm -f $HOME/listErrors
-	cp ../scripts/listErrors $HOME/bin/listErrors
-	rm -f $HOME/proj_search
-	cp ../scripts/proj_search $HOME/proj_search
+	rm -f $(HOME)/lib/libOpenParEMCommon.a
+	mv libOpenParEMCommon.a $(HOME)/lib/libOpenParEMCommon.a
+	rm -f $(HOME)/bin/checkErrors.sh
+	cp ../scripts/checkErrors.sh $(HOME)/bin/checkErrors.sh
+	rm -f $(HOME)/listErrors
+	cp ../scripts/listErrors $(HOME)/bin/listErrors
+	rm -f $(HOME)/proj_search
+	cp ../scripts/proj_search $(HOME)/proj_search
 
 clean:
 	rm -f libOpenParEMCommon.a
@@ -88,4 +88,3 @@ clean:
 	rm -f petscErrorHandler.o
 	rm -f sourcefile.o
 	rm -f triplet.o
-
