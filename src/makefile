@@ -67,6 +67,7 @@ all: libOpenParEMCommon.a
 install:
 	rm -f ../lib/libOpenParEMCommon.a
 	cp libOpenParEMCommon.a ../lib/libOpenParEMCommon.a
+	rm -f $(HOME)/lib/libOpenParEMCommon.a
 	mv libOpenParEMCommon.a $(HOME)/lib/libOpenParEMCommon.a
 	rm -f $(HOME)/bin/checkErrors.sh
 	cp ../scripts/checkErrors.sh $(HOME)/bin/checkErrors.sh
