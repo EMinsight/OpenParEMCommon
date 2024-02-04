@@ -65,7 +65,8 @@ libOpenParEMCommon.a: fem.o frequencyPlan.o jobrelated.o keywordPair.o license.o
 all: libOpenParEMCommon.a
 
 install:
-	rm -f $(HOME)/lib/libOpenParEMCommon.a
+	rm -f ../lib/libOpenParEMCommon.a
+	cp libOpenParEMCommon.a ../lib/libOpenParEMCommon.a
 	mv libOpenParEMCommon.a $(HOME)/lib/libOpenParEMCommon.a
 	rm -f $(HOME)/bin/checkErrors.sh
 	cp ../scripts/checkErrors.sh $(HOME)/bin/checkErrors.sh
