@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -33,34 +33,41 @@
 #include <unistd.h>
 #include "petscsys.h"
 #include "misc.hpp"
+#include "prefix.h"
 
 using namespace std;
 using namespace mfem;
+
+extern "C" void prefix ();
 
 bool is_comment (string);
 void split_on_space (vector<string> *, string);
 bool check_field_points (const char *, Mesh *, ParMesh *, int, int, int, double *, double *, double *);
 bool write_attributes (const char *, ParMesh *);
 
-class meshMaterialList {
+class MeshMaterialList {
     private:
        string GMSH_version_number="2.2";
        string regionsFile_version_number="1.0";
        int file_type;
        int data_size;
-       vector<int> index;
-       vector<string> list;
+       vector<int> index;       // mesh attribute (-1)
+       vector<string> list;     // material name
+       vector<bool> active;
     public:
+       void set_active (vector<int> *);
        bool load (const char *, int);
+       void replace_index (int, int);
        int loadGMSH (const char *, int);
        int loadMFEM (const char *);
        bool saveRegionsFile (const char *filename);
        void print ();
-       int size();
-       int get_index (long unsigned int);
+       int size ();
+       long unsigned int get_index (int);
        string get_name (long unsigned int);
 };
 
+void reset_attributes (Mesh *, ParMesh *, MeshMaterialList *);
 
 class Vertex3D {
    private:
@@ -77,12 +84,11 @@ class Vertex3Ddatabase {
       vector<Vertex3D *> vertex3DList;
       double tol=1e-12;
    public:
-      ~Vertex3Ddatabase();
-      long unsigned int size() {return vertex3DList.size();}
+      ~Vertex3Ddatabase ();
+      long unsigned int size () {return vertex3DList.size();}
       Vertex3D* get_Vertex3D (long unsigned int i) {return vertex3DList[i];}
       long unsigned int find (Vertex3D *);
       long unsigned int push (Vertex3D *a) {vertex3DList.push_back(a); return vertex3DList.size()-1;}
-      void reportNonunique();
 };
 
 #endif

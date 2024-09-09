@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -20,10 +20,10 @@
 
 #include "frequencyPlan.hpp"
 
-void FrequencyPlanPoint::print()
+void FrequencyPlanPoint::print ()
 {
    if (active) {
-      PetscPrintf(PETSC_COMM_WORLD,"   %10g",frequency);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"   %15g",frequency);
       if (refinementPriority > 0) {
          PetscPrintf(PETSC_COMM_WORLD,"   refine    %5d",refinementPriority);
          if (restart) PetscPrintf(PETSC_COMM_WORLD,"     restart");
@@ -130,7 +130,6 @@ bool FrequencyPlan::assemble(char *refinement_frequency, unsigned long int input
    unsigned long int LIMIT=10000000;
    refinedCount=0;
    hasRefined=false;
-   lastRefinedIndex=INT_MAX;
    int refinementPriority=1;
 
    // add in the frequencies from the frequency plans in projData
@@ -144,7 +143,7 @@ bool FrequencyPlan::assemble(char *refinement_frequency, unsigned long int input
             planList.push_back(planPoint);
 
             if (planList.size() > LIMIT) {
-               PetscPrintf(PETSC_COMM_WORLD,"ERROR1014: Excessive frequency count > %ld.\n",LIMIT);
+               prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1014: Excessive frequency count > %ld.\n",LIMIT);
                return true;
             }
 
@@ -175,7 +174,7 @@ bool FrequencyPlan::assemble(char *refinement_frequency, unsigned long int input
             planList.push_back(planPoint);
 
             if (planList.size() > LIMIT) {
-               PetscPrintf(PETSC_COMM_WORLD,"ERROR1109: Excessive frequency count > %ld.\n",LIMIT);
+               prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1109: Excessive frequency count > %ld.\n",LIMIT);
                return true;
             }
 
@@ -203,7 +202,7 @@ bool FrequencyPlan::assemble(char *refinement_frequency, unsigned long int input
             planList.push_back(planPoint);
 
             if (planList.size() > LIMIT) {
-               PetscPrintf(PETSC_COMM_WORLD,"ERROR1110: Excessive frequency count > %ld.\n",LIMIT);
+               prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1110: Excessive frequency count > %ld.\n",LIMIT);
                return true;
             }
 
@@ -263,10 +262,9 @@ bool FrequencyPlan::is_refining ()
    return false;
 }
 
-bool FrequencyPlan::get_frequency (char *refinement_frequency, double *frequency, bool *refine, bool *restart) {
-
-   // get the next refinement case, if any
-
+// get the next refinement case, if any
+FrequencyPlanPoint* FrequencyPlan::get_frequency (char *refinement_frequency, double *frequency, bool *refine, bool *restart, int *meshSize)
+{
    if (! hasRefined) {
 
       // get the next frequency that is refining with the lowest priority
@@ -297,24 +295,22 @@ bool FrequencyPlan::get_frequency (char *refinement_frequency, double *frequency
          *refine=true;
          *restart=planList[refinementIndex]->get_restart();
          refinedCount++;
-         lastRefinedIndex=refinementIndex;
-         return true;
+         return planList[refinementIndex];
       }
    }
 
    // finished for case all
-   if (strcmp(refinement_frequency,"all") == 0) return false;
+   if (strcmp(refinement_frequency,"all") == 0) return nullptr;
 
    // refinement is over
 
-   // re-run frequencies if there is more than one mesh refinement
+   // re-run frequencies if the mesh size has changed
    if (!hasRefined && refinedCount > 1) {
       long unsigned int i=0;
       while (i < planList.size()) {
-         if (planList[i]->get_active()) planList[i]->set_simulated(false);
+         if (planList[i]->get_active() && planList[i]->get_meshSize() != *meshSize) planList[i]->set_simulated(false);
          i++;
       }
-      planList[lastRefinedIndex]->set_simulated(true);   // do not need to re-run this frequency
    }
 
    // always true for case "none"
@@ -328,25 +324,25 @@ bool FrequencyPlan::get_frequency (char *refinement_frequency, double *frequency
          *refine=false;
          *restart=false;
          planList[i]->set_simulated(true);
-         return true;
+         return planList[i];
       }
       i++;
    }
 
-   return false;
+   return nullptr;
 }
 
-void FrequencyPlan::print(){
-   PetscPrintf(PETSC_COMM_WORLD,"Frequency Plan:\n");
-   PetscPrintf(PETSC_COMM_WORLD,"   ----------------------------------------\n");
-   PetscPrintf(PETSC_COMM_WORLD,"    frequency   refinement priority restart\n");
-   PetscPrintf(PETSC_COMM_WORLD,"   ----------------------------------------\n");
+void FrequencyPlan::print () {
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"Frequency Plan:\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   ---------------------------------------------\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"         frequency   refinement priority restart\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   ---------------------------------------------\n");
    long unsigned int i=0;
    while (i < planList.size()) {
       planList[i]->print();
       i++;
    }
-   PetscPrintf(PETSC_COMM_WORLD,"   ----------------------------------------\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   ---------------------------------------------\n");
 }
 
 FrequencyPlan::~FrequencyPlan()

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -37,7 +37,7 @@ bool loadData (ifstream *eVecFile, double **eVecRe, double **eVecIm, size_t *vec
    if (*eVecRe == nullptr || *eVecIm == nullptr) {
       if (eVecRe != nullptr) free(eVecRe);
       if (eVecIm != nullptr) free(eVecIm);
-      PetscPrintf(PETSC_COMM_WORLD,"ERROR1010: Failed to allocate memory.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1010: Failed to allocate memory.\n");
       return true;
    }
 
@@ -63,7 +63,7 @@ bool loadData (ifstream *eVecFile, double **eVecRe, double **eVecIm, size_t *vec
                savedValue=true;
                (*vectorSize)++;
             } else if (tokens.size() == 2) {  // ?
-              PetscPrintf(PETSC_COMM_WORLD,"ERROR1011: Unsupported formatting in file \"%s\" at line %d\n",filename,lineNumber);
+              prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1011: Unsupported formatting in file \"%s\" at line %d\n",filename,lineNumber);
               return true;
             } else if (tokens.size() == 3) {  // complex
 
@@ -86,7 +86,7 @@ bool loadData (ifstream *eVecFile, double **eVecRe, double **eVecIm, size_t *vec
                savedValue=true;
                (*vectorSize)++;
             } else {
-              PetscPrintf(PETSC_COMM_WORLD,"ERROR1012: Unsupported formatting in file \"%s\" at line %d\n",filename,lineNumber);
+              prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1012: Unsupported formatting in file \"%s\" at line %d\n",filename,lineNumber);
             }
 
             if (savedValue) {
@@ -98,7 +98,7 @@ bool loadData (ifstream *eVecFile, double **eVecRe, double **eVecIm, size_t *vec
                   if (*eVecRe == nullptr || *eVecIm == nullptr) {
                      if (eVecRe != nullptr) free(eVecRe);
                      if (eVecIm != nullptr) free(eVecIm);
-                     PetscPrintf(PETSC_COMM_WORLD,"ERROR1013: Failed to allocate memory.\n");
+                     prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1013: Failed to allocate memory.\n");
                      return true;
                   }
                }

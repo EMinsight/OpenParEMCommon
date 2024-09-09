@@ -21,44 +21,50 @@ CINCS=-I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I$(SLEPC_DIR)
 CLDIR=
 CLIBS=-lm
 
-fem.o: fem.cpp fem.hpp misc.hpp
+fem.o: fem.cpp fem.hpp misc.hpp jobrelated.hpp
 	$(CCxx) $(CxxFLAGS) -c fem.cpp $(CxxINCS)
 
-frequencyPlan.o: frequencyPlan.cpp frequencyPlan.hpp inputFrequency.h
+frequencyPlan.o: frequencyPlan.cpp frequencyPlan.hpp jobrelated.hpp inputFrequency.h
 	$(CCxx) $(CxxFLAGS) -c frequencyPlan.cpp $(CxxINCS)
 
 jobrelated.o: jobrelated.cpp jobrelated.hpp 
 	$(CCxx) $(CxxFLAGS) -c jobrelated.cpp $(CxxINCS)
 
-keywordPair.o: keywordPair.cpp keywordPair.hpp misc.hpp
+keywordPair.o: keywordPair.cpp keywordPair.hpp jobrelated.hpp misc.hpp
 	$(CCxx) $(CxxFLAGS) -c keywordPair.cpp $(CxxINCS)
 
-license.o: license.cpp license.hpp
+license.o: license.cpp license.hpp jobrelated.hpp
 	$(CCxx) $(CxxFLAGS) -c license.cpp $(CxxINCS)
 
-mesh.o: mesh.cpp mesh.hpp misc.hpp
+mesh.o: mesh.cpp mesh.hpp misc.hpp jobrelated.hpp
 	$(CCxx) $(CxxFLAGS) -c mesh.cpp $(CxxINCS)
 
-misc.o: misc.cpp misc.hpp
+misc.o: misc.cpp misc.hpp jobrelated.hpp
 	$(CCxx) $(CxxFLAGS) -c misc.cpp $(CxxINCS)
 
-OpenParEMmaterials.o: OpenParEMmaterials.cpp OpenParEMmaterials.hpp fem.hpp keywordPair.hpp misc.hpp
+OpenParEMmaterials.o: OpenParEMmaterials.cpp OpenParEMmaterials.hpp fem.hpp jobrelated.hpp keywordPair.hpp misc.hpp
 	$(CCxx) $(CxxFLAGS) -c OpenParEMmaterials.cpp $(CxxINCS)
 
-path.o: path.cpp path.hpp keywordPair.hpp misc.hpp
+path.o: path.cpp path.hpp jobrelated.hpp keywordPair.hpp misc.hpp
 	$(CCxx) $(CxxFLAGS) -c path.cpp $(CxxINCS)
 
 petscErrorHandler.o: petscErrorHandler.cpp petscErrorHandler.hpp
 	$(CCxx) $(CxxFLAGS) -c petscErrorHandler.cpp $(CxxINCS)
 
-sourcefile.o: sourcefile.cpp sourcefile.hpp misc.hpp path.hpp
+sourcefile.o: sourcefile.cpp sourcefile.hpp jobrelated.hpp misc.hpp path.hpp
 	$(CCxx) $(CxxFLAGS) -c sourcefile.cpp $(CxxINCS)
+
+prefix.o: prefix.c prefix.h
+	$(CC) $(CFLAGS) -c prefix.c $(CINCS)
 
 triplet.o: triplet.c triplet.h
 	$(CC) $(CFLAGS) -c triplet.c $(CINCS)
 
-libOpenParEMCommon.a: fem.o frequencyPlan.o jobrelated.o keywordPair.o license.o mesh.o misc.o OpenParEMmaterials.o path.o petscErrorHandler.o sourcefile.o triplet.o
-	ar rcs libOpenParEMCommon.a fem.o frequencyPlan.o jobrelated.o keywordPair.o license.o mesh.o misc.o OpenParEMmaterials.o path.o petscErrorHandler.o sourcefile.o triplet.o
+Zsolve.o: Zsolve.c Zsolve.h
+	$(CC) $(CFLAGS) -c Zsolve.c $(CINCS)
+
+libOpenParEMCommon.a: fem.o frequencyPlan.o jobrelated.o keywordPair.o license.o mesh.o misc.o OpenParEMmaterials.o path.o petscErrorHandler.o sourcefile.o prefix.o triplet.o Zsolve.o
+	ar rcs libOpenParEMCommon.a fem.o frequencyPlan.o jobrelated.o keywordPair.o license.o mesh.o misc.o OpenParEMmaterials.o path.o petscErrorHandler.o sourcefile.o prefix.o triplet.o Zsolve.o
 
 .PHONY: all clean install
 
@@ -79,6 +85,9 @@ install:
 	rm -f $(HOME)/bin/proj_search
 	cp ../scripts/proj_search $(HOME)/bin/proj_search
 
+	rm -f $(HOME)/bin/project_cleanup.sh
+	cp ../scripts/project_cleanup.sh $(HOME)/bin/project_cleanup.sh
+
 clean:
 	rm -f libOpenParEMCommon.a
 	rm -f fem.o
@@ -92,4 +101,6 @@ clean:
 	rm -f path.o
 	rm -f petscErrorHandler.o
 	rm -f sourcefile.o
+	rm -f prefix.o
 	rm -f triplet.o
+	rm -f Zsolve.o

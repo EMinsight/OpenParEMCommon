@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -30,6 +30,7 @@
 #include "fem.hpp"
 #include "keywordPair.hpp"
 #include "misc.hpp"
+#include "prefix.h"
 
 using namespace std;
 
@@ -45,17 +46,17 @@ class Frequency
       keywordPair Rz;                    // surface roughness
    public:
       Frequency (int,int,bool);
-      Frequency (){}
+      Frequency () {}
       bool load (string *, inputFile *);
-      bool inFrequencyBlock(int);
-      keywordPair* get_frequency() {return &frequency;}
-      keywordPair* get_relative_permittivity() {return &relative_permittivity;}
-      keywordPair* get_relative_permeability() {return &relative_permeability;}
-      keywordPair* get_loss() {return &loss;}
-      keywordPair* get_Rz() {return &Rz;}
-      int get_startLine() {return startLine;}
-      void print(string);
-      bool check(string);
+      bool inFrequencyBlock (int);
+      keywordPair* get_frequency () {return &frequency;}
+      keywordPair* get_relative_permittivity () {return &relative_permittivity;}
+      keywordPair* get_relative_permeability () {return &relative_permeability;}
+      keywordPair* get_loss () {return &loss;}
+      keywordPair* get_Rz () {return &Rz;}
+      int get_startLine () {return startLine;}
+      void print (string);
+      bool check (string);
 };
 
 
@@ -75,19 +76,19 @@ class Temperature
    public:
       Temperature (int,int,bool);
       Temperature (){}
-      ~Temperature();
-      bool findFrequencyBlocks(inputFile *, bool);
-      bool inFrequencyBlocks(int);
+      ~Temperature ();
+      bool findFrequencyBlocks (inputFile *, bool);
+      bool inFrequencyBlocks (int);
       bool inTemperatureBlock (int);
-      keywordPair* get_temperature() {return &temperature;}
-      Frequency* get_frequency(int i) {return frequencyList[i];}
-      int get_startLine() {return startLine;}
+      keywordPair* get_temperature () {return &temperature;}
+      Frequency* get_frequency (int i) {return frequencyList[i];}
+      int get_startLine () {return startLine;}
       complex<double> get_eps (double, double, string);
       double get_mu (double, double, string);
       double get_Rs (double, double, string);
-      bool load(string *, inputFile *, bool);
-      void print(string);
-      bool check(string);
+      bool load (string *, inputFile *, bool);
+      void print (string);
+      bool check (string);
 };
 
 class Source
@@ -100,8 +101,8 @@ class Source
    public:
       Source (int,int);  // startLine,endLine
       bool inSourceBlock (int);
-      bool load(inputFile *);
-      void print(string);
+      bool load (inputFile *);
+      void print (string);
 };
 
 
@@ -116,23 +117,23 @@ class Material
       bool merged=false;
    public:
       Material (int,int);  // startLine,endLine
-      Material (){}
-      ~Material();
+      Material () {}
+      ~Material ();
       bool load (string *, inputFile *, bool);
       bool get_merged () {return merged;}
       void set_merged (bool a) {merged=a;}
-      bool findTemperatureBlocks(inputFile *, bool);
-      bool findSourceBlocks(inputFile *);
-      bool inTemperatureBlocks(int);
-      bool inSourceBlocks(int);
-      keywordPair* get_name() {return &name;}
-      int get_startLine() {return startLine;}
-      Temperature* get_temperature(double, double, string);
-      complex<double> get_eps(double, double, double, string);
-      double get_mu(double, double, double, string);
-      double get_Rs(double, double, double, string);
-      void print(string);
-      bool check(string);
+      bool findTemperatureBlocks (inputFile *, bool);
+      bool findSourceBlocks (inputFile *);
+      bool inTemperatureBlocks (int);
+      bool inSourceBlocks (int);
+      keywordPair* get_name () {return &name;}
+      int get_startLine () {return startLine;}
+      Temperature* get_temperature (double, double, string);
+      complex<double> get_eps (double, double, double, string);
+      double get_mu (double, double, double, string);
+      double get_Rs (double, double, double, string);
+      void print (string);
+      bool check (string);
 };
 
 class MaterialDatabase
@@ -149,14 +150,14 @@ class MaterialDatabase
       ~MaterialDatabase();
       bool load_materials (char *, char *, char *, char *, bool);
       bool load (const char *, const char *, bool);
-      bool merge(MaterialDatabase *, string);
-      void push(Material *a) {materialList.push_back(a);}
-      void print(string);
-      bool findMaterialBlocks();
-      bool check();
-      Material* get(string);
-      double get_tol() {return tol;}
-      string get_indent() {return indent;}
+      bool merge (MaterialDatabase *, string);
+      void push (Material *a) {materialList.push_back(a);}
+      void print (string);
+      bool findMaterialBlocks ();
+      bool check ();
+      Material* get (string);
+      double get_tol () {return tol;}
+      string get_indent () {return indent;}
 };
 
 

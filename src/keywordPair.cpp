@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -27,26 +27,26 @@
 bool keywordPair::int_limit_checks (string *keyword, int lineNumber)
 {
    if (positive_required && int_value <= 0) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1017: %s at line %d is required to be positive.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1017: %s at line %d is required to be positive.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
       return false;
    }
 
    if (non_negative_required && int_value < 0) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1018: %s at line %d is required to be non-negative.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1018: %s at line %d is required to be non-negative.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
       return false;
    }
 
    if (int_value < lowerLimit) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1019: %s at line %d is required to be >= %g.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,lowerLimit);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1019: %s at line %d is required to be >= %g.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,lowerLimit);
       return false;
    }
 
    if (int_value > upperLimit) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1020: %s at line %d is required to be <= %g.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,upperLimit);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1020: %s at line %d is required to be <= %g.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,upperLimit);
       return false;
    }
 
@@ -56,26 +56,26 @@ bool keywordPair::int_limit_checks (string *keyword, int lineNumber)
 bool keywordPair::dbl_limit_checks (string *keyword, int lineNumber)
 {
    if (positive_required && dbl_value <= 0) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1021: %s at line %d is required to be positive.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1021: %s at line %d is required to be positive.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
       return false; 
    }
 
    if (non_negative_required && dbl_value < 0) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1022: %s at line %d is required to be non-negative.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1022: %s at line %d is required to be non-negative.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
       return false;
    }
 
    if (dbl_value < lowerLimit*(1-dbl_tolerance)) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1023: %s at line %d is required to be >= %g.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,lowerLimit);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1023: %s at line %d is required to be >= %g.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,lowerLimit);
       return false;
    }
 
    if (dbl_value > upperLimit*(1+dbl_tolerance)) { 
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1024: %s at line %d is required to be <= %g.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,upperLimit);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1024: %s at line %d is required to be <= %g.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,upperLimit);
       return false;
    }
 
@@ -85,27 +85,27 @@ bool keywordPair::dbl_limit_checks (string *keyword, int lineNumber)
 bool keywordPair::point_limit_checks (string *keyword, int lineNumber)
 {
    if (positive_required && (point_value.x <= 0 || point_value.y <= 0 || (point_value.dim == 3 && point_value.z <= 0))) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1025: %s at line %d is required to be positive.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1025: %s at line %d is required to be positive.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
       return false;
    }
 
    if (non_negative_required && (point_value.x < 0 || point_value.y < 0 || (point_value.dim == 3 && point_value.z < 0))) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1026: %s at line %d is required to be non-negative.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1026: %s at line %d is required to be non-negative.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber);
       return false;
    }
 
    if (point_value.x < lowerLimit*(1-dbl_tolerance) || point_value.y < lowerLimit*(1-dbl_tolerance) || (point_value.dim == 3 && point_value.z < lowerLimit*(1-dbl_tolerance))) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1027: %s at line %d is required to be >= %g.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,lowerLimit);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1027: %s at line %d is required to be >= %g.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,lowerLimit);
 
       return false;
    }
 
    if (point_value.x > upperLimit*(1+dbl_tolerance) || point_value.y > upperLimit*(1+dbl_tolerance) || (point_value.dim == 3 && point_value.z > upperLimit*(1+dbl_tolerance))) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1028: %s at line %d is required to be <= %g.\n",
-                                   indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,upperLimit);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1028: %s at line %d is required to be <= %g.\n",
+                                             indent.c_str(),indent.c_str(),keyword->c_str(),lineNumber,upperLimit);
       return false;
    }
 
@@ -123,7 +123,7 @@ bool keywordPair::limit_check (string type)
    } else if (type.compare("point") == 0) {
       if (! point_limit_checks (&keyword, lineNumber)) fail=true;
    } else {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: bad selection in keywordPair::limit_check\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: bad selection in keywordPair::limit_check\n");
    }
 
    return fail;
@@ -143,15 +143,15 @@ bool keywordPair::loadBool (string *token, string *value_, int lineNumber_)
 {
    // check for duplicate
    if (loaded) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1029: Duplicate entry at line %d for previous entry at line %d.\n",
-                                   indent.c_str(),indent.c_str(),lineNumber_,lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1029: Duplicate entry at line %d for previous entry at line %d.\n",
+                                             indent.c_str(),indent.c_str(),lineNumber_,lineNumber);
       return true;
    }
 
    // check for a boolean
    if (value_->compare("true") != 0 && value_->compare("false") != 0) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1030: %s value at line %d is invalid.\n",
-                                   indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1030: %s value at line %d is invalid.\n",
+                                             indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
       return true;
    }
 
@@ -172,23 +172,23 @@ bool keywordPair::loadInt (string *token, string *value_, int lineNumber_)
 {
    // check for duplicate
    if (loaded) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1031: Duplicate entry at line %d for previous entry at line %d.\n",
-                                   indent.c_str(),indent.c_str(),lineNumber_,lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1031: Duplicate entry at line %d for previous entry at line %d.\n",
+                                             indent.c_str(),indent.c_str(),lineNumber_,lineNumber);
       return true;
    }
 
    // check for a pure number
    if (!is_int(value_)) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1032: %s value at line %d is invalid.\n",
-                                   indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1032: %s value at line %d is invalid.\n",
+                                             indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
       return true;
    }
 
    // get the value
    try {int_value=stoi(*value_);}
    catch (const std::invalid_argument& ia) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1033: %s value at line %d is invalid.\n",
-                                   indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1033: %s value at line %d is invalid.\n",
+                                             indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
       return true;
    }
 
@@ -208,23 +208,23 @@ bool keywordPair::loadDouble (string *token, string *value_, int lineNumber_)
 {
    // check for duplicate
    if (loaded) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1112: Duplicate entry at line %d for previous entry at line %d.\n",
-                                   indent.c_str(),indent.c_str(),lineNumber_,lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1112: Duplicate entry at line %d for previous entry at line %d.\n",
+                                             indent.c_str(),indent.c_str(),lineNumber_,lineNumber);
       return true;
    }
 
    // check for a pure number
    if (!is_double(value_)) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1111: %s value at line %d is invalid.\n",
-                                   indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1111: %s value at line %d is invalid.\n",
+                                             indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
       return true;
    }
 
    // get the value
    try {dbl_value=stod(*value_);}
    catch (const std::invalid_argument& ia) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1113: %s value at line %d is invalid.\n",
-                                   indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1113: %s value at line %d is invalid.\n",
+                                              indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
       return true;
    }
 
@@ -244,15 +244,15 @@ bool keywordPair::loadPoint (int dim, string *token, string *value_, int lineNum
 {
    // check for duplicate
    if (loaded) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1114: Duplicate entry at line %d for previous entry at line %d.\n",
-                                   indent.c_str(),indent.c_str(),lineNumber_,lineNumber);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1114: Duplicate entry at line %d for previous entry at line %d.\n",
+                                             indent.c_str(),indent.c_str(),lineNumber_,lineNumber);
       return true;
    }
 
    // check
    if (!is_point(value_,dim)) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1115: %s value at line %d is invalid.\n",
-                                   indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1115: %s value at line %d is invalid.\n",
+                                             indent.c_str(),indent.c_str(),token->c_str(),lineNumber_);
       return true;
    }
 
@@ -266,6 +266,12 @@ bool keywordPair::loadPoint (int dim, string *token, string *value_, int lineNum
    point_value.dim=dim;
    loaded=true;
 
+   return false;
+}
+
+bool keywordPair::int_compare (keywordPair *test)
+{
+   if (int_value == test->int_value) return true;
    return false;
 }
 
@@ -308,6 +314,20 @@ bool keywordPair::is_close_point (keywordPair *a)
    return true;
 }
 
+// note the change in tolerance from above
+bool keywordPair::is_close_point (double x, double y, double z)
+{
+   if (! double_compare(get_point_value_x(),x,1e-8)) return false;
+   if (! double_compare(get_point_value_y(),y,1e-8)) return false;
+   if (! double_compare(get_point_value_z(),z,1e-8)) return false;
+   return true;
+}
+
+double keywordPair::distance_to_point (double x, double y, double z)
+{
+   return sqrt(pow(get_point_value_x()-x,2)+pow(get_point_value_y()-y,2)+pow(get_point_value_z()-z,2));
+}
+
 void keywordPair::copy (keywordPair a)
 {
    aliases.clear();
@@ -345,21 +365,21 @@ void keywordPair::print()
 {
   long unsigned int i=0;
   while (i < aliases.size()) {
-     PetscPrintf(PETSC_COMM_WORLD,"alias: %s\n",aliases[i].c_str());
+     prefix(); PetscPrintf(PETSC_COMM_WORLD,"alias: %s\n",aliases[i].c_str());
      i++;
   }
-  PetscPrintf(PETSC_COMM_WORLD,"keyword: %s\n",keyword.c_str());
-  PetscPrintf(PETSC_COMM_WORLD,"value: %s\n",value.c_str());
-  PetscPrintf(PETSC_COMM_WORLD,"lineNumber: %d\n",lineNumber);
-  PetscPrintf(PETSC_COMM_WORLD,"int_value: %d\n",int_value);
-  PetscPrintf(PETSC_COMM_WORLD,"dbl_value: %g\n",dbl_value);
-  PetscPrintf(PETSC_COMM_WORLD,"loaded: %d\n",loaded);
-  PetscPrintf(PETSC_COMM_WORLD,"lowerLimit: %g\n",lowerLimit);
-  PetscPrintf(PETSC_COMM_WORLD,"upperLimit: %g\n",upperLimit);
-  PetscPrintf(PETSC_COMM_WORLD,"postive_required: %d\n",positive_required);
-  PetscPrintf(PETSC_COMM_WORLD,"non_negative_required: %d\n",non_negative_required);
-  PetscPrintf(PETSC_COMM_WORLD,"indent: [%s]\n",indent.c_str());
-  PetscPrintf(PETSC_COMM_WORLD,"dbl_tolerance: %g\n",dbl_tolerance);
-  PetscPrintf(PETSC_COMM_WORLD,"checkLimits: %d\n",checkLimits);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"keyword: %s\n",keyword.c_str());
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"value: %s\n",value.c_str());
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"lineNumber: %d\n",lineNumber);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"int_value: %d\n",int_value);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"dbl_value: %g\n",dbl_value);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"loaded: %d\n",loaded);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"lowerLimit: %g\n",lowerLimit);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"upperLimit: %g\n",upperLimit);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"postive_required: %d\n",positive_required);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"non_negative_required: %d\n",non_negative_required);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"indent: [%s]\n",indent.c_str());
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"dbl_tolerance: %g\n",dbl_tolerance);
+  prefix(); PetscPrintf(PETSC_COMM_WORLD,"checkLimits: %d\n",checkLimits);
 }
 

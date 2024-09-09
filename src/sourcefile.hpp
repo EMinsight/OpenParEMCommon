@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -28,6 +28,7 @@
 #include <limits>
 #include "misc.hpp"
 #include "path.hpp"
+#include "prefix.h"
 
 using namespace std;
 
@@ -37,13 +38,13 @@ class SourceFile {
       int endLine;
       keywordPair name;
    public:
-      SourceFile(int,int);
-      SourceFile* clone();
-      bool load(string *, inputFile *);
-      bool inBlock(int);
-      string get_name() {return name.get_value();}
-      bool check(string *);
-      void print();
+      SourceFile (int,int);
+      SourceFile* clone ();
+      bool load (string *, inputFile *);
+      bool inBlock (int);
+      string get_name () {return name.get_value();}
+      bool check (string *);
+      void print ();
 };
 
 #endif

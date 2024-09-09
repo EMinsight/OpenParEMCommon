@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -442,7 +442,7 @@ bool mergePaths (vector<Path *> *pathList, vector<long unsigned int> *pathIndexL
    while (i < pathIndexList->size()) {
       Path *path=(*pathList)[(*pathIndexList)[i]];
       if (path->is_closed()) {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1095: Path must be open with \"closed\" set to \"false\" at line number %d.\n",path->get_closed_lineNumber());
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1095: Path must be open with \"closed\" set to \"false\" at line number %d.\n",path->get_closed_lineNumber());
          fail=true;
       }
       i++;
@@ -503,8 +503,9 @@ bool mergePaths (vector<Path *> *pathList, vector<long unsigned int> *pathIndexL
       long unsigned int j=i+1;
       while (j < (*mergedPath)->get_points_size()) {
          if ((*mergedPath)->get_point(i)->point_compare((*mergedPath)->get_point(j))) {
-            PetscPrintf(PETSC_COMM_WORLD,"ERROR1096: Merged path for %s %s has duplicate point at (%g,%g,%g)\n",
-               boundaryType.c_str(),boundaryName.c_str(),(*mergedPath)->get_point(i)->get_point_value_x(),(*mergedPath)->get_point(i)->get_point_value_y(),(*mergedPath)->get_point(i)->get_point_value_z());
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1096: Merged path for %s %s has duplicate point at (%g,%g,%g)\n",
+               boundaryType.c_str(),boundaryName.c_str(),(*mergedPath)->get_point(i)->get_point_value_x(),
+               (*mergedPath)->get_point(i)->get_point_value_y(),(*mergedPath)->get_point(i)->get_point_value_z());
             fail=true;
          }
          j++;
@@ -565,8 +566,30 @@ Path::Path(int startLine_, int endLine_)
 
    hasNormal=false;
    nx=-1; ny=-1; nz=-1;
+
+   hasOutput=false;
 }
 
+double Path::get_point_x (long unsigned int i)
+{
+   if (i < points.size()) return points[i]->get_point_value_x();
+   if (points.size() > 0 && is_closed() && i == points.size()) return points[0]->get_point_value_x();
+   return DBL_MAX;
+}
+
+double Path::get_point_y (long unsigned int i)
+{
+   if (i < points.size()) return points[i]->get_point_value_y();
+   if (points.size() > 0 && is_closed() && i == points.size()) return points[0]->get_point_value_y();
+   return DBL_MAX;
+}
+
+double Path::get_point_z (long unsigned int i)
+{
+   if (i < points.size()) return points[i]->get_point_value_z();
+   if (points.size() > 0 && is_closed() && i == points.size()) return points[0]->get_point_value_z();
+   return DBL_MAX;
+}
 
 // return true if the point is close
 bool Path::compare (long unsigned int i, keywordPair test_point)
@@ -586,41 +609,45 @@ bool Path::compare (long unsigned int i, keywordPair test_point)
 void Path::print (string indent)
 {
    int dim=0;
-   PetscPrintf(PETSC_COMM_WORLD,"%sPath %p\n",indent.c_str(),this);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   name=%s\n",indent.c_str(),get_name().c_str());
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%sPath %p\n",indent.c_str(),this);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   name=%s\n",indent.c_str(),get_name().c_str());
    long unsigned int i=0;
    while (i < points.size()) {
-      if (get_point_dim(i) == 2) {dim=2; PetscPrintf(PETSC_COMM_WORLD,"%s   point=(%g,%g)\n",indent.c_str(),get_point_x(i),get_point_y(i));}
-      if (get_point_dim(i) == 3) {dim=3; PetscPrintf(PETSC_COMM_WORLD,"%s   point=(%g,%g,%g)\n",indent.c_str(),get_point_x(i),get_point_y(i),get_point_z(i));}
+      if (get_point_dim(i) == 2) {dim=2; prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   point=(%g,%g)\n",indent.c_str(),get_point_x(i),get_point_y(i));}
+      if (get_point_dim(i) == 3) {dim=3; prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   point=(%g,%g,%g)\n",indent.c_str(),get_point_x(i),get_point_y(i),get_point_z(i));}
       i++;
    }
-   if (closed.get_bool_value()) PetscPrintf(PETSC_COMM_WORLD,"%s   closed=true\n",indent.c_str());
-   else PetscPrintf(PETSC_COMM_WORLD,"%s   closed=false\n",indent.c_str());
-   PetscPrintf(PETSC_COMM_WORLD,"%s   tol=%g\n",indent.c_str(),tol);
-   if (rotated) PetscPrintf(PETSC_COMM_WORLD,"%s   rotated=true\n",indent.c_str());
-   else PetscPrintf(PETSC_COMM_WORLD,"%s   rotated=false\n",indent.c_str());
-   PetscPrintf(PETSC_COMM_WORLD,"%s   theta=%g\n",indent.c_str(),theta);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   phi=%g\n",indent.c_str(),phi);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   sin_theta_=%g\n",indent.c_str(),sin_theta_);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   cos_theta_=%g\n",indent.c_str(),cos_theta_);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   sin_phi_=%g\n",indent.c_str(),sin_phi_);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   cos_phi_=%g\n",indent.c_str(),cos_phi_);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   xmax=%g\n",indent.c_str(),xmax);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   xmin=%g\n",indent.c_str(),xmin);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   ymax=%g\n",indent.c_str(),ymax);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   ymin=%g\n",indent.c_str(),ymin);
-   if (dim == 3) PetscPrintf(PETSC_COMM_WORLD,"%s   zmax=%g\n",indent.c_str(),zmax);
-   if (dim == 3) PetscPrintf(PETSC_COMM_WORLD,"%s   zmin=%g\n",indent.c_str(),zmin);
-   if (hasNormal) PetscPrintf(PETSC_COMM_WORLD,"%s   hasNormal=true\n",indent.c_str());
-   else PetscPrintf(PETSC_COMM_WORLD,"%s   hasNormal=false\n",indent.c_str());
-   PetscPrintf(PETSC_COMM_WORLD,"%s   nx=%g\n",indent.c_str(),nx);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   ny=%g\n",indent.c_str(),ny);
-   PetscPrintf(PETSC_COMM_WORLD,"%s   nz=%g\n",indent.c_str(),nz);
-   PetscPrintf(PETSC_COMM_WORLD,"%sEndPath\n",indent.c_str());
+   if (closed.get_bool_value()) {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   closed=true\n",indent.c_str());}
+   else {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   closed=false\n",indent.c_str());}
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   tol=%g\n",indent.c_str(),tol);
+   if (rotated) {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   rotated=true\n",indent.c_str());}
+   else {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   rotated=false\n",indent.c_str());}
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   theta=%g\n",indent.c_str(),theta);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   phi=%g\n",indent.c_str(),phi);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   sin_theta_=%g\n",indent.c_str(),sin_theta_);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   cos_theta_=%g\n",indent.c_str(),cos_theta_);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   sin_phi_=%g\n",indent.c_str(),sin_phi_);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   cos_phi_=%g\n",indent.c_str(),cos_phi_);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   xmax=%g\n",indent.c_str(),xmax);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   xmin=%g\n",indent.c_str(),xmin);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   ymax=%g\n",indent.c_str(),ymax);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   ymin=%g\n",indent.c_str(),ymin);
+   if (dim == 3) {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   zmax=%g\n",indent.c_str(),zmax);}
+   if (dim == 3) {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   zmin=%g\n",indent.c_str(),zmin);}
+   if (hasNormal) {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   hasNormal=true\n",indent.c_str());}
+   else {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   hasNormal=false\n",indent.c_str());}
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   nx=%g\n",indent.c_str(),nx);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   ny=%g\n",indent.c_str(),ny);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   nz=%g\n",indent.c_str(),nz);
+   if (hasOutput) {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   hasOutput=true\n",indent.c_str());}
+   else {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s   hasOutput=false\n",indent.c_str());}
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%sEndPath\n",indent.c_str());
 }
 
-void Path::output (ofstream *out, int force_dim)
+bool Path::output (ofstream *out, int force_dim)
 {
+   if (hasOutput) return false;
+
    *out << "Path" << endl;
    *out << "   name=" << get_name() << endl;
    long unsigned int i=0;
@@ -633,6 +660,10 @@ void Path::output (ofstream *out, int force_dim)
    else *out << "   closed=false" << endl;
 
    *out << "EndPath" << endl;
+
+   hasOutput=true;
+
+   return true;
 }
 
 bool Path::load(int dim, string *indent, inputFile *inputs)
@@ -651,8 +682,8 @@ bool Path::load(int dim, string *indent, inputFile *inputs)
 
       if (name.match_alias(&token)) {
          if (name.is_loaded()) {
-            PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1097: Duplicate entry at line %d for previous entry at line %d.\n",
-                                         indent->c_str(),indent->c_str(),lineNumber,name.get_lineNumber());
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1097: Duplicate entry at line %d for previous entry at line %d.\n",
+                                                  indent->c_str(),indent->c_str(),lineNumber,name.get_lineNumber());
             fail=true;
          } else {
             name.set_keyword(token);
@@ -690,7 +721,7 @@ bool Path::load(int dim, string *indent, inputFile *inputs)
 
       // should recognize one keyword
       if (recognized != 1) {
-         PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1098: Unrecognized keyword at line %d.\n",indent->c_str(),indent->c_str(),lineNumber);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1098: Unrecognized keyword at line %d.\n",indent->c_str(),indent->c_str(),lineNumber);
          fail=true;
       }
       lineNumber=inputs->get_next_lineNumber(lineNumber);
@@ -724,12 +755,12 @@ bool Path::checkBoundingBox(Vector *lowerLeft, Vector *upperRight, string *inden
 
       if (point_fail) {
          if (points[i]->get_point_value_dim() == 2) {
-            PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1099: Path block at line %d has point (%g,%g) outside of the mesh bounding box.\n",
-                                         indent->c_str(),indent->c_str(),startLine,points[i]->get_point_value_x(),points[i]->get_point_value_y());
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1099: Path block at line %d has point (%g,%g) outside of the mesh bounding box.\n",
+                                                   indent->c_str(),indent->c_str(),startLine,points[i]->get_point_value_x(),points[i]->get_point_value_y());
          }
          if (points[i]->get_point_value_dim() == 3) {
-            PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1100: Path block at line %d has point (%g,%g,%g) outside of the mesh bounding box.\n",
-                                         indent->c_str(),indent->c_str(),startLine,
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1100: Path block at line %d has point (%g,%g,%g) outside of the mesh bounding box.\n",
+                                                   indent->c_str(),indent->c_str(),startLine,
                                          points[i]->get_point_value_x(),points[i]->get_point_value_y(),points[i]->get_point_value_z());
          }
          fail=true;
@@ -752,27 +783,27 @@ bool Path::check(string *indent)
    bool fail=false;
 
    if (!name.is_loaded()) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1101: Path block at line %d must specify a name.\n",indent->c_str(),indent->c_str(),startLine);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1101: Path block at line %d must specify a name.\n",indent->c_str(),indent->c_str(),startLine);
       fail=true;
    }
 
    if (!closed.is_loaded()) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1102: Path block at line %d must specify \"closed\".\n",indent->c_str(),indent->c_str(),startLine);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1102: Path block at line %d must specify \"closed\".\n",indent->c_str(),indent->c_str(),startLine);
       fail=true;
    }
 
    if (points.size() == 0) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1103: Path block at line %d must specify points.\n",indent->c_str(),indent->c_str(),startLine);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1103: Path block at line %d must specify points.\n",indent->c_str(),indent->c_str(),startLine);
       fail=true;
    }
 
    if (points.size() == 1) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1104: Path block at line %d must specify more than one point.\n",indent->c_str(),indent->c_str(),startLine);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1104: Path block at line %d must specify more than one point.\n",indent->c_str(),indent->c_str(),startLine);
       fail=true;
    }
 
    if (points.size() == 2 && closed.get_bool_value()) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1105: Path block at line %d cannot be closed with just two points.\n",indent->c_str(),indent->c_str(),startLine);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1105: Path block at line %d cannot be closed with just two points.\n",indent->c_str(),indent->c_str(),startLine);
       fail=true;
    }
 
@@ -1074,6 +1105,9 @@ Path* Path::clone()
       newPath->points.push_back(points[i]->clone());
       i++;
    }
+
+   newPath->hasOutput=hasOutput;
+
    return newPath;
 }
 
@@ -1101,6 +1135,8 @@ void Path::calculateBoundingBox()
 // assumes that the path is planar
 bool Path::calculateNormal ()
 {
+   if (points.size() == 0) return true;
+
    // this is a 3D operation,
    // just need to check one point
    if (points[0]->get_point_value_dim() == 2) {
@@ -1109,7 +1145,7 @@ bool Path::calculateNormal ()
 
    // exit if 0, 1, or 2 points - cannot determine a normal vector
    if (points.size() < 3) {
-      //PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::calculateNormal passed path with fewer than 3 points.\n");
+      //prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::calculateNormal passed path with fewer than 3 points.\n");
       return true;
    }
 
@@ -1141,7 +1177,7 @@ bool Path::calculateNormal ()
 
    // cannot continue if the points are colinear - cannot determine a normal vector
    if (double_compare(abs(theta),M_PI,tol)) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::calculateNormal passed a colinear path.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::calculateNormal passed a colinear path.\n");
       return true;
    }
 
@@ -1196,7 +1232,7 @@ Path* Path::rotateToXYplane ()
 
    // see if already rotated
    if (rotated) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::rotateToXYplane passed a rotated path.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::rotateToXYplane passed a rotated path.\n");
       return nullptr;
    }
 
@@ -1265,7 +1301,7 @@ Path* Path::rotateToXYplane ()
    i=1;
    while (i < rotated->points.size()) {
       if (! double_compare(rotated->points[i]->get_point_value_z(),rotated->points[0]->get_point_value_z(),rotated->tol)) {
-         PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::rotateToXYplane passed a 3D path that is not planar.\n");
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::rotateToXYplane passed a 3D path that is not planar.\n");
       }
       i++;
    }
@@ -1318,7 +1354,7 @@ void Path::rotateToPath (Path *rotatedPath)
    double x,y,z;
 
    if (!rotatedPath->rotated) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::rotateToPath passed a path that is not rotated.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::rotateToPath passed a path that is not rotated.\n");
       return;
    }
 
@@ -1344,7 +1380,7 @@ void Path::rotateToPath (Path *rotatedPath, bool spin180degrees)
    double x,y,z;
 
    if (!rotatedPath->rotated) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::rotateToPath passed a path that is not rotated.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::rotateToPath passed a path that is not rotated.\n");
       return;
    }
 
@@ -1370,12 +1406,12 @@ double Path::distanceFromPoint (double x, double y, double z)
   double x0,y0,z0,d,distance;
 
   if (!hasNormal) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::distanceFromPoint does not have a normal defined.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::distanceFromPoint does not have a normal defined.\n");
       return -1;
   }
 
   if (points.size() == 0) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::distanceFromPoint does not have any points.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::distanceFromPoint does not have any points.\n");
       return -1;
   }
 
@@ -1401,15 +1437,11 @@ bool Path::is_point_inside (double xtr, double ytr, double ztr)
    if (points.size() == 0) return false;
 
    if (! rotated) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::is_point_inside passed an unrotated path.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::is_point_inside passed an unrotated path.\n");
       return false;
    }
-
    // rotate the given test point by the plane's theta and phi angles
    rotatePoint(&xtr,&ytr,&ztr);
-
-//   // cannot be inside if the z's do not align - just need to check one point
-//   if (! double_compare(points[0]->get_point_value_z(),ztr,tol)) return false;
 
    // check all the points and accept if there is a match
    bool found=false;
@@ -1455,7 +1487,7 @@ bool Path::is_point_interior (double xtr, double ytr, double ztr)
    if (points.size() == 0) return false;
 
    if (! rotated) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::is_point_interior passed an unrotated path.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::is_point_interior passed an unrotated path.\n");
       return false;
    }
 
@@ -1497,7 +1529,7 @@ bool Path::does_line_intersect (double x1, double y1, double z1, double x2, doub
    if (points.size() == 0) return false;
 
    if (! rotated) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::does_line_intersect passed an unrotated path.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::does_line_intersect passed an unrotated path.\n");
       return false;
    }
 
@@ -1584,7 +1616,7 @@ void Path::test_is_point_inside_m ()
    string expected="";
 
    if (points.size() < 3) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::test_is_point_inside was passed a point or a line.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::test_is_point_inside was passed a point or a line.\n");
       return;
    }
 
@@ -1722,7 +1754,7 @@ void Path::test_is_point_inside_mr ()
    string expected="";
 
    if (points.size() < 3) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::test_is_point_inside was passed a point or a line.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::test_is_point_inside was passed a point or a line.\n");
       return;
    }
 
@@ -1857,7 +1889,7 @@ void Path::test_is_point_inside_sqr2 ()
    string expected="";
 
    if (points.size() < 3) {
-      PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::test_is_point_inside was passed a point or a line.\n");
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::test_is_point_inside was passed a point or a line.\n");
       return;
    }
 
@@ -1922,6 +1954,116 @@ void Path::test_is_point_inside_sqr2 ()
    delete rotated;
 }
 
+bool Path::snapToMeshBoundary (Mesh *mesh)
+{
+   bool fail=false;
+   DenseMatrix pointMat(3,3);
+
+   // nothing to do
+   if (points.size() == 0) return false;
+
+   // check for dimensional alignment
+   if (mesh->Dimension() != points[0]->get_point_value_dim()) {
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ASSERT: Path::snapToMesh passed mismatched dimensions.\n");
+      return true;
+   }
+
+   long unsigned int i=0;
+   while (i < points.size()) {
+      bool found_point=false;
+      int j=0;
+      while (j < mesh->GetNBE()) {
+         if (mesh->GetBdrElementType(j) == Element::TRIANGLE) {
+            mesh->GetBdrPointMatrix(j,pointMat);
+
+            if (points[i]->is_close_point(pointMat.Elem(0,0),pointMat.Elem(1,0),pointMat.Elem(2,0))) {
+               points[i]->set_point_value(pointMat.Elem(0,0),pointMat.Elem(1,0),pointMat.Elem(2,0));
+               found_point=true;
+               break;
+            } else if (points[i]->is_close_point(pointMat.Elem(0,1),pointMat.Elem(1,1),pointMat.Elem(2,1))) {
+               points[i]->set_point_value(pointMat.Elem(0,1),pointMat.Elem(1,1),pointMat.Elem(2,1));
+               found_point=true;
+               break;
+            } else if (points[i]->is_close_point(pointMat.Elem(0,2),pointMat.Elem(1,2),pointMat.Elem(2,2))) {
+               points[i]->set_point_value(pointMat.Elem(0,2),pointMat.Elem(1,2),pointMat.Elem(2,2));
+               found_point=true;
+               break;
+            } 
+         }
+         j++;
+      }
+      if (!found_point) fail=true;
+      i++;
+   }
+
+   return fail;
+}
+
+double Path::area ()
+{
+   Path *path=nullptr;
+   bool allocatedPath=false;
+   double area=0;
+   double x1,y1,x2,y2;
+
+   if (points.size() == 0) return DBL_MAX;
+
+   int dim=points[0]->get_point_value_dim();
+   if (dim == 2) path=this;
+   else {
+      if (rotated) path=this;
+      else {
+         path=rotateToXYplane();
+         allocatedPath=true;
+      }
+   }
+
+   long unsigned int j=0;
+   while (j < path->points.size()-1) {
+      x1=path->get_point_x(j);
+      y1=path->get_point_y(j);
+      x2=path->get_point_x(j+1);
+      y2=path->get_point_y(j+1);
+      area+=x1*y2-x2*y1;
+      j++;
+   }
+
+   if (get_closed()) {
+      x1=path->get_point_x(points.size()-1);
+      y1=path->get_point_y(points.size()-1);
+      x2=path->get_point_x(0);
+      y2=path->get_point_y(0);
+      area+=x1*y2-x2*y1;
+   }
+
+   if (allocatedPath) delete path;
+
+   area/=2;
+
+   return area;
+}
+
+void Path::reverseOrder ()
+{
+   vector<keywordPair *> reversed_points;
+
+   long unsigned int i=0;
+   while (i < points.size()) {
+      reversed_points.push_back(points[points.size()-1-i]);
+      i++;
+   }
+
+   i=0;
+   while (i < points.size()) {
+      points[i]=reversed_points[i];
+      i++;
+   }
+
+   // post-operations to align with Path::load
+   calculateBoundingBox();
+   calculateNormal();   
+}
+
 Path::~Path ()
 {
    long unsigned int i=0;
@@ -1930,4 +2072,3 @@ Path::~Path ()
       i++;
    }
 }
-

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -25,7 +25,7 @@ void exit_job_on_error (chrono::system_clock::time_point job_start_time, const c
    PetscMPIInt rank;
    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-   PetscPrintf(PETSC_COMM_WORLD,"|Job Complete\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"Job Complete\n");
 
    // remove the lock - not 100% safe
    if (rank == 0 && removeLock) {
@@ -36,11 +36,19 @@ void exit_job_on_error (chrono::system_clock::time_point job_start_time, const c
 
    chrono::system_clock::time_point job_end_time=chrono::system_clock::now();
    chrono::duration<double> elapsed = job_end_time - job_start_time;
-   PetscPrintf(PETSC_COMM_WORLD,"|Elapsed time: %g s\n",elapsed.count());
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"Elapsed time: %g s\n",elapsed.count());
+
+   // notifiy the barrier and send the exit code in case OpenParEM2D was spawned by OpenParEM3D
+   MPI_Comm parent;
+   MPI_Comm_get_parent (&parent);
+   if (parent != MPI_COMM_NULL) {
+      MPI_Barrier(parent);
+      int retval[1]={1};
+      MPI_Send(retval,1,MPI_INT,0,0,parent);
+   }
+
    PetscFinalize();
 
-   //ToDo: re-investigate this when MPI is running.
-   // exit with no error indication to prevent mpirun from reporting the error
    exit(1);
 }
 
@@ -60,7 +68,7 @@ char* create_lock_file (const char *baseName)
    int is_locked=0;
    if (rank == 0) {
       if (std::filesystem::exists(lockfile)) {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1015: Project \"%s.proj\" is locked with file \"%s\".\n",baseName,ssLock.str().c_str());
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1015: Project \"%s.proj\" is locked with file \"%s\".\n",baseName,ssLock.str().c_str());
          is_locked=1;
       }
    }
@@ -80,7 +88,7 @@ char* create_lock_file (const char *baseName)
          lock.close();
          is_locked=1;
       } else {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1016: Cannot open \"%s\" for writing.\n",lockfile);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1016: Cannot open \"%s\" for writing.\n",lockfile);
       }
    }
 

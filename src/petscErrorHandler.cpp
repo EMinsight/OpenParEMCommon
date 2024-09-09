@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM3D - A fullwave 3D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -30,16 +30,16 @@ PetscErrorCode errorHandler (MPI_Comm comm, int line, const char *fun, const cha
    PetscErrorCode ierr=0;
 
    if (rank == 0) {
-      if (n == PETSC_ERR_MEM)                 cout << "|ERROR1117: out of memory" << endl;
-      else if (n == PETSC_ERR_FP)             cout << "|ERROR1118: floating point exception" << endl;
-      else if (n == PETSC_ERR_COR)            cout << "|ERROR1119: corrupted data object" << endl;
-      else if (n == PETSC_ERR_LIB)            cout << "|ERROR1120: unspecified library error" << endl;
-      else if (n == PETSC_ERR_PLIB)           cout << "|ERROR1121: inconsistent data" << endl;
-      else if (n == PETSC_ERR_MEMC)           cout << "|ERROR1122: memory corruption" << endl;
-      else if (n == PETSC_ERR_CONV_FAILED)    cout << "|ERROR1123: failed convergence" << endl;
-      else if (n == PETSC_ERR_POINTER)        cout << "|ERROR1124: invalid pointer" << endl;
-      else if (n == PETSC_ERR_NOT_CONVERGED)  cout << "|ERROR1125: solver did not converge" << endl;
-      else                                    cout << "|ERROR1126: " << mess << endl;
+      if (n == PETSC_ERR_MEM)                 cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1117: out of memory" << endl;
+      else if (n == PETSC_ERR_FP)             cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1118: floating point exception" << endl;
+      else if (n == PETSC_ERR_COR)            cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1119: corrupted data object" << endl;
+      else if (n == PETSC_ERR_LIB)            cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1120: unspecified library error" << endl;
+      else if (n == PETSC_ERR_PLIB)           cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1121: inconsistent data" << endl;
+      else if (n == PETSC_ERR_MEMC)           cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1122: memory corruption" << endl;
+      else if (n == PETSC_ERR_CONV_FAILED)    cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1123: failed convergence" << endl;
+      else if (n == PETSC_ERR_POINTER)        cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1124: invalid pointer" << endl;
+      else if (n == PETSC_ERR_NOT_CONVERGED)  cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1125: solver did not converge" << endl;
+      else                                    cout << ((struct applicationContext *)ctx)->prefix_text << "ERROR1126: " << mess << endl;
    }
 
    exit_job_on_error (((struct applicationContext *)ctx)->job_start_time,((struct applicationContext *)ctx)->lockfile,true);

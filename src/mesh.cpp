@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -48,17 +48,17 @@ bool check_field_points (const char *filename, Mesh *mesh, ParMesh *pmesh, int o
       }
 
       if (! fail && pointFail) {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1094: Project file \"%s\":\n",filename);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1094: Project file \"%s\":\n",filename);
       }
 
       if (pointFail) {
          fail=true;
          if (dim == 2) {
-            PetscPrintf(PETSC_COMM_WORLD,"          field.point %g,%g falls outside of the mesh bounding box.\n",
-                                          field_points_x[i],field_points_y[i]);
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"          field.point %g,%g falls outside of the mesh bounding box.\n",
+                                                   field_points_x[i],field_points_y[i]);
          } else {
-            PetscPrintf(PETSC_COMM_WORLD,"          field.point %g,%g,%g falls outside of the mesh bounding box.\n",
-                                          field_points_x[i],field_points_y[i],field_points_z[i]);
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"          field.point %g,%g,%g falls outside of the mesh bounding box.\n",
+                                                   field_points_x[i],field_points_y[i],field_points_z[i]);
          }
       }
 
@@ -215,7 +215,7 @@ bool write_attributes (const char *baseName, ParMesh *pmesh)
          }
          CSV.close();
       } else {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1127: Failed to open file \"%s\" for writing.\n",ss.str().c_str());
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1116: Failed to open file \"%s\" for writing.\n",ss.str().c_str());
          return true;
       }
    }
@@ -225,12 +225,165 @@ bool write_attributes (const char *baseName, ParMesh *pmesh)
    return false;
 }
 
+void push_if_unique (vector<int> *data, int value)
+{
+   long unsigned int i=0;
+   while (i < data->size()) {
+      if ((*data)[i] == value) return;
+      i++;
+   }
+   data->push_back(value);
+}
+
+// reset the attributes so that they start with 1 and increase without gaps [required by MFEM]
+void reset_attributes (Mesh *mesh, ParMesh *pmesh, MeshMaterialList *meshMaterials)
+{
+   PetscMPIInt size,rank;
+   MPI_Comm_size(PETSC_COMM_WORLD, &size);
+   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+   vector<int> attributes;
+
+   // make a list of unique attributes then sort
+
+   int NE;
+   if (mesh) NE=mesh->GetNE();
+   if (pmesh) NE=pmesh->GetNE();
+
+   int i=0;
+   while (i < NE) {
+      int attribute;
+      if (mesh) attribute=mesh->GetAttribute(i);
+      if (pmesh) attribute=pmesh->GetAttribute(i);
+      push_if_unique (&attributes,attribute);
+      i++;
+   }
+
+   // make a global list
+
+   //collect at zero
+   if (rank == 0) {
+      int i=1;
+      while (i < size) {
+         int transfer_size;
+         MPI_Recv(&transfer_size,1,MPI_INT,i,100,PETSC_COMM_WORLD,MPI_STATUS_IGNORE);
+
+         int k=0;
+         while (k < transfer_size) {
+            int transfer_value;
+            MPI_Recv(&transfer_value,1,MPI_INT,i,101,PETSC_COMM_WORLD,MPI_STATUS_IGNORE);
+            push_if_unique (&attributes,transfer_value);
+            k++;
+         }
+ 
+         i++;
+      }
+   } else {
+      int local_size=attributes.size();
+      MPI_Send(&local_size,1,MPI_INT,0,100,PETSC_COMM_WORLD);
+
+      int i=0;
+      while (i < local_size) {
+         int local_value=attributes[i];
+         MPI_Send(&local_value,1,MPI_INT,0,101,PETSC_COMM_WORLD);
+         i++;
+      }
+   }
+
+   // distribute
+   if (rank == 0) {
+
+      sort(attributes.begin(),attributes.end());
+
+      int i=1;
+      while (i < size) {
+         int local_size=attributes.size();
+         MPI_Send(&local_size,1,MPI_INT,i,102,PETSC_COMM_WORLD);
+
+         int j=0;
+         while (j < local_size) {
+            int local_value=attributes[j];
+            MPI_Send(&local_value,1,MPI_INT,i,103,PETSC_COMM_WORLD);
+            j++;
+         }
+
+         i++;
+      }
+   } else {
+      attributes.clear();
+
+      int transfer_size;
+      MPI_Recv(&transfer_size,1,MPI_INT,0,102,PETSC_COMM_WORLD,MPI_STATUS_IGNORE);
+
+      int k=0;
+      while (k < transfer_size) {
+         int transfer_value;
+         MPI_Recv(&transfer_value,1,MPI_INT,0,103,PETSC_COMM_WORLD,MPI_STATUS_IGNORE);
+         attributes.push_back(transfer_value);
+         k++;
+      }
+   }
+
+   // activate used materials
+   meshMaterials->set_active(&attributes);
+
+   // assign new attributes
+   int new_attribute=1;
+   long unsigned int k=0;
+   while (k < attributes.size()) {
+
+      // update the mesh
+      int j=0;
+      while (j < NE) {
+         int attribute;
+         if (mesh) attribute=mesh->GetAttribute(j);
+         if (pmesh) attribute=pmesh->GetAttribute(j);
+         if (attribute == attributes[k]) {
+            if (mesh) mesh->SetAttribute(j,new_attribute);
+            if (pmesh) pmesh->SetAttribute(j,new_attribute);
+         }
+         j++;
+      }
+
+      // update the mesh materials
+      meshMaterials->replace_index(attributes[k]-1,new_attribute-1);
+
+      new_attribute++;
+      k++;
+   }
+
+   // recalculate the support data structures
+   if (mesh) mesh->SetAttributes();
+   if (pmesh) pmesh->SetAttributes();
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-// meshMaterialList
+// MeshMaterialList
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-bool meshMaterialList::load (const char *filename, int dimension)
+void MeshMaterialList::set_active (vector<int> *active_attributes)
+{
+   long unsigned int i=0;
+   while (i < index.size()) {
+      active[i]=false;
+      i++;
+   }
+
+   i=0;
+   while (i < index.size()) {
+      long unsigned int j=0;
+      while (j < active_attributes->size()) {
+         if (index[i] == (*active_attributes)[j]-1) {
+            active[i]=true;
+            break;
+         }
+         j++;
+      }
+      i++;
+   }
+}
+
+bool MeshMaterialList::load (const char *filename, int dimension)
 {
    bool fail=false;
    PetscMPIInt size,rank;
@@ -252,7 +405,7 @@ bool meshMaterialList::load (const char *filename, int dimension)
       if (std::filesystem::exists(ss.str().c_str())) {
          meshFile.open(ss.str().c_str(),ifstream::in);
       } else {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1079: Mesh file for \"%s\" is not available for reading.\n",filename);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1079: Mesh file for \"%s\" is not available for reading.\n",filename);
          return true;
       }
    }
@@ -261,30 +414,39 @@ bool meshMaterialList::load (const char *filename, int dimension)
 
       if (getline(meshFile,line)) {
          if (line.compare("MFEM mesh v1.0") == 0 || line.compare("MFEM mesh v1.2") == 0) {
-            PetscPrintf(PETSC_COMM_WORLD,"   loading MFEM mesh format\n");
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"   loading MFEM mesh format\n");
             if (loadMFEM (filename)) fail=true;
          } else if (line.compare("$MeshFormat") == 0) {
-            PetscPrintf(PETSC_COMM_WORLD,"   loading gmsh mesh format\n");
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"   loading gmsh mesh format\n");
             if (loadGMSH(filename,dimension)) fail=true;
          } else {
-            PetscPrintf(PETSC_COMM_WORLD,"ERROR1076: Unrecognized mesh format in file \"%s\".\n",filename);
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1076: Unrecognized mesh format in file \"%s\".\n",filename);
             fail=true;
          }
       } else {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1077: Unable to read file \"%s\".\n",filename);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1077: Unable to read file \"%s\".\n",filename);
          fail=true;
       }
       meshFile.close();
    } else {
-      PetscPrintf(PETSC_COMM_WORLD,"ERROR1034: File \"%s\" is not available for reading.\n",filename);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1034: File \"%s\" is not available for reading.\n",filename);
       fail=true;
    }
 
    return fail;
 }
 
+void MeshMaterialList::replace_index (int old_index, int new_index)
+{
+   long unsigned int i=0;
+   while (i < index.size()) {
+      if (active[i] && (index[i] == old_index)) index[i]=new_index;
+      i++;
+   }
+}
+
 // parse the msh file for the information in the $PhysicalNames block
-int meshMaterialList::loadGMSH (const char *filename, int dimension)
+int MeshMaterialList::loadGMSH (const char *filename, int dimension)
 {
    long unsigned int materialCount=0;
    int lineCount=0;
@@ -317,13 +479,13 @@ int meshMaterialList::loadGMSH (const char *filename, int dimension)
                      startedFormat=false; completedFormat=true;
 
                      if (GMSH_version_number.compare(version_number) != 0) {
-                        PetscPrintf(PETSC_COMM_WORLD,"ERROR1035: Incorrect mesh format of %s in file \"%s\".\n",version_number.c_str(),filename);
+                        prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1035: Incorrect mesh format of %s in file \"%s\".\n",version_number.c_str(),filename);
                         meshFile.close();
                         return 1;
                      }
 
                      if (file_type != 0) {
-                        PetscPrintf(PETSC_COMM_WORLD,"ERROR1036: Binary file form is not supported for file \"%s\".\n",filename);
+                        prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1036: Binary file form is not supported for file \"%s\".\n",filename);
                         meshFile.close();
                         return 1;
                      }
@@ -331,7 +493,7 @@ int meshMaterialList::loadGMSH (const char *filename, int dimension)
                      if (!loadedFormat) {
                         split_on_space (&tokens,line);
                         if (tokens.size() != 3) {
-                           PetscPrintf(PETSC_COMM_WORLD,"ERROR1037: Incorrect number of tokens in file \"%s\" at line %d.\n",filename,lineCount);
+                           prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1037: Incorrect number of tokens in file \"%s\" at line %d.\n",filename,lineCount);
                            meshFile.close();
                            return 1;
                         }
@@ -351,7 +513,7 @@ int meshMaterialList::loadGMSH (const char *filename, int dimension)
                      startedNames=false; completedNames=true;
 
                      if (materialCount != list.size()) {
-                        PetscPrintf(PETSC_COMM_WORLD,"ERROR1038: Incorrect format in $PhysicalNames block in file \"%s\" at line %d\n",filename,lineCount);
+                        prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1038: Incorrect format in $PhysicalNames block in file \"%s\" at line %d\n",filename,lineCount);
                         meshFile.close();
                         return 1;
                      }
@@ -362,16 +524,17 @@ int meshMaterialList::loadGMSH (const char *filename, int dimension)
                      } else {
                         split_on_space (&tokens,line);
                         if (tokens.size() != 3) {
-                           PetscPrintf(PETSC_COMM_WORLD,"ERROR1039: Incorrect number of tokens in file \"%s\" at line %d.\n",filename,lineCount);
+                           prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1039: Incorrect number of tokens in file \"%s\" at line %d.\n",filename,lineCount);
                            meshFile.close();
                            return 1;
                         }
                         int dim=stoi(tokens[0]);
                         if (dim != dimension) {
-                           PetscPrintf(PETSC_COMM_WORLD,"Warning: Dimension %d!=2 in file \"%s\" at line %d.\n",dim,filename,lineCount);
+                           prefix(); PetscPrintf(PETSC_COMM_WORLD,"Warning: Dimension %d!=2 in file \"%s\" at line %d.\n",dim,filename,lineCount);
                         }
 
                         index.push_back(stoi(tokens[1])-1);
+                        active.push_back(true);
 
                         // strip off "
                         pos1=tokens[2].find("\"",0);
@@ -394,26 +557,26 @@ int meshMaterialList::loadGMSH (const char *filename, int dimension)
       }
 
       if (meshFile.bad()) {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1040: Error while reading file \"%s\".\n",filename);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1040: Error while reading file \"%s\".\n",filename);
          meshFile.close();
          return 1;
       }
    } else {
-      PetscPrintf(PETSC_COMM_WORLD,"ERROR1041: File \"%s\" is not available for reading.\n",filename);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1041: File \"%s\" is not available for reading.\n",filename);
       return 1;
    }
 
    int retval=0;
 
    if (! completedFormat) {
-      if (startedFormat) PetscPrintf(PETSC_COMM_WORLD,"ERROR1042: $MeshFormat block is missing the $EndMeshFormat statement in file \"%s\".\n",filename);
-      else PetscPrintf(PETSC_COMM_WORLD,"ERROR1043: $EndMeshFormat block is missing in file \"%s\".\n",filename);
+      if (startedFormat) {prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1042: $MeshFormat block is missing the $EndMeshFormat statement in file \"%s\".\n",filename);}
+      else {prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1043: $EndMeshFormat block is missing in file \"%s\".\n",filename);}
       retval=1;
    }
 
    if (! completedNames) {
-      if (startedNames) PetscPrintf(PETSC_COMM_WORLD,"ERROR1044: $PhysicalNames block is missing the $EndPhysicalNames statement in file \"%s\".\n",filename);
-      else PetscPrintf(PETSC_COMM_WORLD,"ERROR1045: $PhysicalNames block is missing in file \"%s\".\n",filename);
+      if (startedNames) {prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1044: $PhysicalNames block is missing the $EndPhysicalNames statement in file \"%s\".\n",filename);}
+      else {prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1045: $PhysicalNames block is missing in file \"%s\".\n",filename);}
       retval=1;
    }
 
@@ -422,40 +585,48 @@ int meshMaterialList::loadGMSH (const char *filename, int dimension)
    return retval;
 }
 
-int meshMaterialList::size()
+int MeshMaterialList::size()
 {
    return list.size();
 }
 
-int meshMaterialList::get_index(long unsigned int m)
+long unsigned int MeshMaterialList::get_index (int attribute)
 {
-   if (m >= 0 && m < index.size()) return index[m];
-   return -1;
+   long unsigned int i=0;
+   while (i < index.size()) {
+      if (active[i] && index[i] == attribute) return i;
+      i++;
+   }
+
+   PetscPrintf(PETSC_COMM_WORLD,"ASSERT: MeshMaterialList::get_index failed to find data.\n");
+   return 0;
 }
 
-string meshMaterialList::get_name(long unsigned int m)
+string MeshMaterialList::get_name(long unsigned int m)
 {
    string a="ERROR1046: out of bounds";
-   if (m >= 0 && m < list.size()) return list[m];
+   if (m >= 0 && m < list.size() && active[m]) return list[m];
    return a;
 }
 
-void meshMaterialList::print ()
+void MeshMaterialList::print ()
 {
-   PetscPrintf(PETSC_COMM_WORLD,"meshMaterialList:\n");
-   PetscPrintf(PETSC_COMM_WORLD,"GMSH_version_number=%s\n",GMSH_version_number.c_str());
-   PetscPrintf(PETSC_COMM_WORLD,"regionsFile_version_number=%s\n",regionsFile_version_number.c_str());
-   PetscPrintf(PETSC_COMM_WORLD,"file-type=%d\n",file_type);
-   PetscPrintf(PETSC_COMM_WORLD,"data-size=%d\n",data_size);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"MeshMaterialList:\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   GMSH_version_number=%s\n",GMSH_version_number.c_str());
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   regionsFile_version_number=%s\n",regionsFile_version_number.c_str());
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   file-type=%d\n",file_type);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   data-size=%d\n",data_size);
    
    long unsigned int i=0;
    while (i < list.size()) {
-      PetscPrintf(PETSC_COMM_WORLD,"%d %s\n",index[i],list[i].c_str());
+      string active_state="false";
+      if (active[i]) active_state="true";
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"   %d %s active=%s\n",index[i],list[i].c_str(),active_state.c_str());
       i++;
    }
 }
 
-int meshMaterialList::loadMFEM (const char *filename)
+int MeshMaterialList::loadMFEM (const char *filename)
 {
    int lineCount=0;
    string line;
@@ -477,7 +648,7 @@ int meshMaterialList::loadMFEM (const char *filename)
       getline(regionsFile,line);
       lineCount++;
       if (line.compare(ss.str()) != 0) {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1047: Incorrect regions format of \"%s\" in file \"%s\" at line 1.\n",ss.str().c_str(),filename);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1047: Incorrect regions format of \"%s\" in file \"%s\" at line 1.\n",ss.str().c_str(),filename);
          regionsFile.close();
          return 1;
       }
@@ -497,12 +668,13 @@ int meshMaterialList::loadMFEM (const char *filename)
 
                split_on_space (&tokens,line);
                if (tokens.size() != 2) {
-                  PetscPrintf(PETSC_COMM_WORLD,"ERROR1048: Incorrect number of tokens in file \"%s\" at line %d.\n",filename,lineCount);
+                  prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1048: Incorrect number of tokens in file \"%s\" at line %d.\n",filename,lineCount);
                   regionsFile.close();
                   return 1;
                }
 
                index.push_back(stoi(tokens[0]));
+               active.push_back(true);
 
                // strip off "
                pos1=tokens[1].find("\"",0);
@@ -519,21 +691,21 @@ int meshMaterialList::loadMFEM (const char *filename)
       }
 
       if (regionsFile.bad()) {
-         PetscPrintf(PETSC_COMM_WORLD,"ERROR1049: Error while reading file \"%s\".\n",filename);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1049: Error while reading file \"%s\".\n",filename);
          regionsFile.close();
          return 1;
       }
 
       regionsFile.close();
    } else {
-      PetscPrintf(PETSC_COMM_WORLD,"ERROR1078: File \"%s\" is not available for reading.\n",regionsFilename.str().c_str());
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1078: File \"%s\" is not available for reading.\n",regionsFilename.str().c_str());
       return 1;
    }
 
    return 0;
 }
 
-bool meshMaterialList::saveRegionsFile (const char *filename)
+bool MeshMaterialList::saveRegionsFile (const char *filename)
 {
    ofstream regionsFile;
    regionsFile.open(filename,ofstream::out);
@@ -543,13 +715,15 @@ bool meshMaterialList::saveRegionsFile (const char *filename)
 
       long unsigned int i=0;
       while (i < index.size()) {
-         regionsFile << index[i] << " " << list[i] << endl;
+         if (active[i]) {
+            regionsFile << index[i] << " " << list[i] << endl;
+         }
          i++;
       } 
 
       regionsFile.close();
    } else {
-      PetscPrintf(PETSC_COMM_WORLD,"ERROR1051: Cannot open file \"%s\" for writing.\n",filename);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1051: Cannot open file \"%s\" for writing.\n",filename);
       return true;
    }
 
@@ -571,27 +745,6 @@ long unsigned int Vertex3Ddatabase::find (Vertex3D *vertex3D)
       i++;
    }
    return max;
-}
-
-void Vertex3Ddatabase::reportNonunique ()
-{
-   bool found=false;
-   long unsigned int i=0;
-   while (i < vertex3DList.size()-1) {
-      long unsigned int j=i+1;
-      while (j < vertex3DList.size()) {
-         if (double_compare(vertex3DList[i]->get_x(),vertex3DList[j]->get_x(),tol) &&
-             double_compare(vertex3DList[i]->get_y(),vertex3DList[j]->get_y(),tol) &&
-             double_compare(vertex3DList[i]->get_z(),vertex3DList[j]->get_z(),tol)) {
-            cout << "Vertex3Ddatabase non-unique points " << i << " and " << j
-                 << " at (" << vertex3DList[i]->get_x() << "," << vertex3DList[i]->get_y() << "," << vertex3DList[i]->get_z() << ")" << endl;
-            found=true;
-         }
-         j++;
-      }
-      i++;
-   }
-   if (! found) cout << "Vertex3Ddatabase has no non-unique points." << endl;
 }
 
 Vertex3Ddatabase::~Vertex3Ddatabase()

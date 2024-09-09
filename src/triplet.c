@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -23,7 +23,7 @@
 
 void print_dataTriplet (struct dataTriplet *a) {
    if (a) {
-      PetscPrintf(PETSC_COMM_WORLD,"%zu %zu %20.14e\n",a->i,a->j,a->value);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%zu %zu %20.14e\n",a->i,a->j,a->value);
    }
 }
 
@@ -92,7 +92,7 @@ void print_vectorTriplet (struct vectorTriplet *a) {
 
    n=0;
    while (n < a->size) {
-      PetscPrintf(PETSC_COMM_WORLD,"%zu %zu %20.14e\n",a->vector[n].i,a->vector[n].j,a->vector[n].value);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%zu %zu %20.14e\n",a->vector[n].i,a->vector[n].j,a->vector[n].value);
       n++;
    }
    return;

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -30,6 +30,7 @@
 #include "petscsys.h"
 #include "keywordPair.hpp"
 #include "misc.hpp"
+#include "prefix.h"
 
 using namespace std;
 using namespace mfem;
@@ -49,7 +50,7 @@ class Path {
       double tol=1e-11; // 1e-12
       bool hasNormal;
       double nx,ny,nz;
-      bool rotated;
+      bool rotated;        // true if this path is rotated parallel to the x-y plane
       double theta;        // rotation about z-axis
       double phi;          // rotation about y-axis
       double sin_theta_;
@@ -59,34 +60,37 @@ class Path {
       double xmax,xmin;
       double ymax,ymin;
       double zmax,zmin;
+      bool hasOutput;
    public:
       Path (int, int);
-      ~Path();
-      bool load(int, string *, inputFile *);
+      ~Path ();
+      bool load (int, string *, inputFile *);
       bool inBlock (int);
-      bool check(string *);
-      bool checkBoundingBox(Vector *, Vector *, string *, double);
-      string get_name() {return name.get_value();}
-      bool name_is_loaded() {return name.is_loaded();}
-      int get_name_lineNumber() {return name.get_lineNumber();}
-      bool get_closed() {return closed.get_bool_value();}
-      int get_closed_lineNumber() {return closed.get_lineNumber();}
-      int get_startLine() {return startLine;}
-      int get_endLine() {return endLine;}
-      long unsigned int get_points_size() {return points.size();}
+      bool check (string *);
+      bool checkBoundingBox (Vector *, Vector *, string *, double);
+      string get_name () {return name.get_value();}
+      bool name_is_loaded () {return name.is_loaded();}
+      int get_name_lineNumber () {return name.get_lineNumber();}
+      bool get_closed () {return closed.get_bool_value();}
+      int get_closed_lineNumber () {return closed.get_lineNumber();}
+      int get_startLine () {return startLine;}
+      int get_endLine () {return endLine;}
+      long unsigned int get_points_size () {return points.size();}
       keywordPair* get_point (long unsigned int i) {return points[i];}
-      double get_point_x (long unsigned int i) {return points[i]->get_point_value_x();}
-      double get_point_y (long unsigned int i) {return points[i]->get_point_value_y();}
-      double get_point_z (long unsigned int i) {return points[i]->get_point_value_z();}
+      double get_point_x (long unsigned int i);
+      double get_point_y (long unsigned int i);
+      double get_point_z (long unsigned int i);
       int get_point_dim (long unsigned int i) {return points[i]->get_point_value_dim();}
       void push_point (keywordPair *point) {points.push_back(point);}
       void pop_point () {points.pop_back();}
       bool compare (long unsigned int i, keywordPair test_point);
-      void set_closed(bool value) {closed.set_bool_value(value); closed.set_loaded(true);}
-      bool is_closed() {return closed.get_bool_value();}
+      void set_closed (bool value) {closed.set_bool_value(value); closed.set_loaded(true);}
+      bool is_closed () {return closed.get_bool_value();}
       void set_name (string name_) {name.set_value(name_); name.set_loaded(true);}
-      keywordPair* get_startPoint() {return points[0];}
-      keywordPair* get_endPoint() {if (closed.get_bool_value()) return points[0]; return points[points.size()-1];}
+      void set_hasOutput () {hasOutput=true;}
+      void unset_hasOutput () {hasOutput=false;}
+      keywordPair* get_startPoint () {return points[0];}
+      keywordPair* get_endPoint () {if (closed.get_bool_value()) return points[0]; return points[points.size()-1];}
       long unsigned int is_segmentOnLine (double, double, double, double);
       long unsigned int is_segmentOnLine (double, double, double, double, double, double);
       bool does_line_intersect (double, double, double, double, double, double);
@@ -95,7 +99,7 @@ class Path {
       void subdivide3D (Path *);
       double sum_of_angles (double, double);
       bool calculateNormal ();
-      bool is_rotated() {return rotated;}
+      bool is_rotated () {return rotated;}
       Path* rotateToXYplane ();
       void rotatePoint (double *, double *, double *);
       void rotatePoint (double *, double *, double *, bool);
@@ -108,11 +112,14 @@ class Path {
       void test_is_point_inside_m ();
       void test_is_point_inside_mr ();
       void test_is_point_inside_sqr2 ();
-      Path* clone();
-      void calculateBoundingBox();
-      void get_normal(double *nx_, double *ny_, double *nz_) {*nx_=nx; *ny_=ny; *nz_=nz;}
-      void print(string);
-      void output (ofstream *, int);
+      Path* clone ();
+      void calculateBoundingBox ();
+      void get_normal (double *nx_, double *ny_, double *nz_) {*nx_=nx; *ny_=ny; *nz_=nz;}
+      void print (string);
+      bool output (ofstream *, int);
+      bool snapToMeshBoundary (Mesh *);
+      double area ();
+      void reverseOrder ();
 };
 
 bool mergePaths (vector<Path *> *, vector<long unsigned int> *, vector<bool> *, string, string, Path **);

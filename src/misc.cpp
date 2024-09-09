@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -81,6 +81,23 @@ bool double_compare (double a, double b, double tol)
    if (fabs(a) < tol && fabs(b) < tol) return true;
    if (fabs((a-b)/a) < tol) return true;
    return false;
+}
+
+bool complex_compare (complex<double> a, complex<double> b, double tol)
+{
+   if (a == b) return true;
+   if (a == 0 && abs(b) < tol) return true;
+   if (b == 0 && abs(a) < tol) return true;
+   if (abs(a) < tol && abs(b) < tol) return true;
+   if (abs((a-b)/a) < tol) return true;
+   return false;
+}
+
+double relative_error (double a, double b)
+{
+   if (a == b) return 0;
+   if (b == 0) return abs((a-b)/a);
+   return abs((a-b)/b);
 }
 
 bool is_double (const char *b) {
@@ -300,20 +317,20 @@ bool point_get (string *a, double *x_value, double *y_value, double *z_value, in
    // get the values
    try {*x_value=stod(x_str);}
    catch (const std::invalid_argument& ia) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1000: %s value at line %d is invalid.\n",indent.c_str(),indent.c_str(),a->c_str(),lineNumber_);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1000: %s value at line %d is invalid.\n",indent.c_str(),indent.c_str(),a->c_str(),lineNumber_);
       return true;
    }
 
    try {*y_value=stod(y_str);}
    catch (const std::invalid_argument& ia) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1001: %s value at line %d is invalid.\n",indent.c_str(),indent.c_str(),a->c_str(),lineNumber_);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1001: %s value at line %d is invalid.\n",indent.c_str(),indent.c_str(),a->c_str(),lineNumber_);
       return true;
    }
 
    if (dim == 3) {
       try {*z_value=stod(z_str);}
       catch (const std::invalid_argument& ia) {
-         PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1002: %s value at line %d is invalid.\n",indent.c_str(),indent.c_str(),a->c_str(),lineNumber_);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1002: %s value at line %d is invalid.\n",indent.c_str(),indent.c_str(),a->c_str(),lineNumber_);
          return true;
       }
    }
@@ -330,12 +347,12 @@ void get_token_pair (string *line, string *token, string *value, int *lineNumber
       if (count == 0) *token=test;
       else if (count == 1) *value=test;
       else {
-         PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1003: Incorrectly formatted entry at line %d.\n",indent.c_str(),indent.c_str(),*lineNumber);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1003: Incorrectly formatted entry at line %d.\n",indent.c_str(),indent.c_str(),*lineNumber);
       }
       count++;
    }
 
-   if (count < 2) PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1004: Missing value at line %d.\n",indent.c_str(),indent.c_str(),*lineNumber);
+   if (count < 2) {prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1004: Missing value at line %d.\n",indent.c_str(),indent.c_str(),*lineNumber);}
 
    // chop off white space from front and back
 
@@ -350,6 +367,26 @@ void get_token_pair (string *line, string *token, string *value, int *lineNumber
    }
 
    return;
+}
+
+string processOutputNumber (double a)
+{
+   if (a == DBL_MAX) return "NA";
+   if (a == -DBL_MAX) return "NA";
+
+   stringstream ss;
+   ss << setprecision(15) << a;
+   return ss.str();
+}
+
+bool processInputNumber (string a, double *b)
+{
+   if (a.compare("NA") == 0) *b=DBL_MAX;
+   else {
+      if (is_double(&a)) *b=stod(a);
+      else return true;
+   }
+   return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -396,7 +433,7 @@ bool inputFile::load(const char *filename)
          }
       }
    } else {
-      PetscPrintf(PETSC_COMM_WORLD,"ERROR1005: File \"%s\" could not be opened for reading.\n",filename);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"ERROR1005: File \"%s\" could not be opened for reading.\n",filename);
       return true;
    }
    return false;
@@ -513,13 +550,13 @@ bool inputFile::findBlock(int search_startLine, int search_stopLine,
             *block_startLine=lineNumberList[i];
             break;
          } else if (lineTextList[i].compare(terminator) == 0) {
-            PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1006: \"%s\" found at line %d is missing an opening \"%s\" keyword.\n",
-                                         indent.c_str(),indent.c_str(),terminator.c_str(),lineNumberList[i],initiator.c_str());
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1006: \"%s\" found at line %d is missing an opening \"%s\" keyword.\n",
+                                                   indent.c_str(),indent.c_str(),terminator.c_str(),lineNumberList[i],initiator.c_str());
             *block_stopLine=lineNumberList[i];
             return true;
          } else {
             if (reportUnmatchedText) {
-               PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1007: Invalid entry at line %d.\n",indent.c_str(),indent.c_str(),lineNumberList[i] );
+               prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1007: Invalid entry at line %d.\n",indent.c_str(),indent.c_str(),lineNumberList[i] );
                fail=true;
             }
          }
@@ -545,8 +582,8 @@ bool inputFile::findBlock(int search_startLine, int search_stopLine,
 
          // check for missing terminator
          if (lineTextList[i].compare(initiator) == 0) {
-            PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1008: \"%s\" block at line %d is incorrectly terminated at line %d.\n",
-                                         indent.c_str(),indent.c_str(),initiator.c_str(),*block_startLine,lineNumberList[i]);
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1008: \"%s\" block at line %d is incorrectly terminated at line %d.\n",
+                                                   indent.c_str(),indent.c_str(),initiator.c_str(),*block_startLine,lineNumberList[i]);
             *block_stopLine=get_previous_lineNumber(lineNumberList[i]);
             return true;
          }
@@ -556,8 +593,8 @@ bool inputFile::findBlock(int search_startLine, int search_stopLine,
 
    // missing block terminator
    if (*block_stopLine < 0) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1009: \"%s\" block at line %d is missing its terminator \"%s\".\n",
-                                   indent.c_str(),indent.c_str(),initiator.c_str(),*block_startLine,terminator.c_str());
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1009: \"%s\" block at line %d is missing its terminator \"%s\".\n",
+                                             indent.c_str(),indent.c_str(),initiator.c_str(),*block_startLine,terminator.c_str());
       *block_stopLine=search_stopLine;
       return true;
    }
@@ -569,7 +606,7 @@ void inputFile::print()
 {
    long unsigned int i=0;
    while (i < lineTextList.size()) {
-      PetscPrintf(PETSC_COMM_WORLD,"%d: %s\n",lineNumberList[i],lineTextList[i].c_str());
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%d: %s\n",lineNumberList[i],lineTextList[i].c_str());
       i++;
    }
 }

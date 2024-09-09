@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM3D - A fullwave 3D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -32,6 +32,7 @@ PetscErrorCode errorHandler (MPI_Comm, int, const char *, const char *, PetscErr
 struct applicationContext {
    chrono::system_clock::time_point job_start_time;
    const char *lockfile;
+   char *prefix_text;
 };
 
 #endif

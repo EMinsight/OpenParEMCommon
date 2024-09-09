@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -28,8 +28,11 @@
 #include <string>
 #include <vector>
 #include "inputFrequency.h"
+#include "prefix.h"
 
 using namespace std;
+
+extern "C" void prefix ();
 
 // meshRefinementType:
 // 0 - refine at each frequency individually
@@ -43,18 +46,21 @@ class FrequencyPlanPoint {
       bool restart;                          // true: restart refinement with initial mesh
       bool simulated;                        // true: used for simulation
       bool active;
+      int meshSize;                          // used to determine when a re-simulation is required
    public:
       void set_frequency (double frequency_) {frequency=frequency_;}
       void set_refinementPriority (int refinementPriority_) {refinementPriority=refinementPriority_;}
       void set_restart (bool restart_) {restart=restart_;}
       void set_simulated (bool simulated_) {simulated=simulated_;}
       void set_active (bool active_) {active=active_;}
+      void set_meshSize (int meshSize_) {meshSize=meshSize_;}
       double get_frequency () {return frequency;}
       int get_refinementPriority () {return refinementPriority;}
       bool get_restart () {return restart;}
       bool get_simulated () {return simulated;}
       bool get_active () {return active;}
-      void print();
+      int get_meshSize () {return meshSize;}
+      void print ();
 };
 
 class FrequencyPlan {
@@ -62,18 +68,17 @@ class FrequencyPlan {
       vector<FrequencyPlanPoint *> planList;
       int refinedCount;
       bool hasRefined;
-      long unsigned int lastRefinedIndex;
    public:
-      ~FrequencyPlan();
-      bool assemble(char *, unsigned long int, struct inputFrequencyPlan *);
-      bool get_frequency(char *, double *, bool *, bool *);
-      bool is_refining();
-      void sort();
-      void eliminateDuplicates();
-      void setAllRefineRestart();
+      ~FrequencyPlan ();
+      bool assemble (char *, unsigned long int, struct inputFrequencyPlan *);
+      FrequencyPlanPoint* get_frequency (char *, double *, bool *, bool *, int *);
+      bool is_refining ();
+      void sort ();
+      void eliminateDuplicates ();
+      void setAllRefineRestart ();
       void setLowRefinementPriority (int);
       void setHighRefinementPriority (int);
-      void print();
+      void print ();
 };
 
 

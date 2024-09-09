@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -24,6 +24,9 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "petscsys.h"
+#include "prefix.h"
+
+void prefix ();
 
 // hold one line of data from the transfer file
 struct dataTriplet {

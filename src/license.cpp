@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -18,25 +18,23 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "petscsys.h"
-#include <iostream>
-
-using namespace std;
+#include "license.hpp"
 
 void print_copyright_notice (string program_name)
 {
-   PetscPrintf(PETSC_COMM_WORLD,"%s Copyright (C) 2022 Brian Young\n\n",program_name.c_str());
-   PetscPrintf(PETSC_COMM_WORLD,"This program comes with ABSOLUTELY NO WARRANTY.  This is free software,\n");
-   PetscPrintf(PETSC_COMM_WORLD,"and you are welcome to distribute it under certain conditions. To see\n");
-   PetscPrintf(PETSC_COMM_WORLD,"the full license, set\n");
-   PetscPrintf(PETSC_COMM_WORLD,"  output.show.license true\n");
-   PetscPrintf(PETSC_COMM_WORLD,"in the setup file.\n\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s Copyright (C) 2024 Brian Young\n",program_name.c_str());
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"This program comes with ABSOLUTELY NO WARRANTY.  This is free software,\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"and you are welcome to distribute it under certain conditions. To see\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"the full license, set\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"  output.show.license true\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"in the setup file.\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"\n");
 }
 
 void print_license()
 {
-   cout << "Printing license text ..." << endl;
-   cout << endl;
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"Printing license text ...\n\n");
 
    #include "formatted_license.txt"
 }

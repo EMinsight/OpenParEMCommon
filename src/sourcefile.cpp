@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -55,8 +55,8 @@ bool SourceFile::load(string *indent, inputFile *inputs)
 
       if (name.match_alias(&token)) {
          if (name.is_loaded()) {
-            PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1106: Duplicate entry at line %d for previous entry at line %d.\n",
-                                         indent->c_str(),indent->c_str(),lineNumber,name.get_lineNumber());
+            prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1106: Duplicate entry at line %d for previous entry at line %d.\n",
+                                                   indent->c_str(),indent->c_str(),lineNumber,name.get_lineNumber());
             fail=true;
          } else {
             name.set_keyword(token);
@@ -69,7 +69,7 @@ bool SourceFile::load(string *indent, inputFile *inputs)
 
       // should recognize one keyword
       if (recognized != 1) {
-         PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1107: Unrecognized keyword at line %d.\n",indent->c_str(),indent->c_str(),lineNumber);
+         prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1107: Unrecognized keyword at line %d.\n",indent->c_str(),indent->c_str(),lineNumber);
          fail=true;
       }
       lineNumber=inputs->get_next_lineNumber(lineNumber);
@@ -89,7 +89,7 @@ bool SourceFile::check(string *indent)
    bool fail=false;
 
    if (!name.is_loaded()) {
-      PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1108: File block at line %d must specify a name.\n",indent->c_str(),indent->c_str(),startLine);
+      prefix(); PetscPrintf(PETSC_COMM_WORLD,"%s%sERROR1108: File block at line %d must specify a name.\n",indent->c_str(),indent->c_str(),startLine);
       fail=true;
    }
 
@@ -107,9 +107,9 @@ SourceFile* SourceFile::clone()
 }
 
 void SourceFile::print() {
-   PetscPrintf(PETSC_COMM_WORLD,"File\n");
-   PetscPrintf(PETSC_COMM_WORLD,"   name=%s\n",name.get_value().c_str());
-   PetscPrintf(PETSC_COMM_WORLD,"EndFile\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"File\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   name=%s\n",name.get_value().c_str());
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"EndFile\n");
    return;
 }
 

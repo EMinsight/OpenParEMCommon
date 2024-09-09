@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2022 Brian Young                                          //
+//    Copyright (C) 2024 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -28,6 +28,9 @@
 #include <limits>
 #include <cfloat>
 #include "misc.hpp"
+#include "prefix.h"
+
+extern "C" void prefix ();
 
 using namespace std;
 
@@ -83,42 +86,43 @@ class keywordPair
       void set_lowerLimit (double a) {lowerLimit=a;}
       void set_upperLimit (double a) {upperLimit=a;}
       void set_checkLimits (bool a) {checkLimits=a;}
-
       bool is_loaded () {return loaded;}
       string get_keyword () {return keyword;} 
       string get_value () {return value;}
       int get_lineNumber () {return lineNumber;}
-      int get_int_value() {return int_value;}
-      struct point get_point_value() {return point_value;}
-      double get_point_value_x() {return point_value.x;}
-      double get_point_value_y() {return point_value.y;}
-      double get_point_value_z() {return point_value.z;}
-      int get_point_value_dim() {return point_value.dim;}
+      int get_int_value () {return int_value;}
+      struct point get_point_value () {return point_value;}
+      double get_point_value_x () {return point_value.x;}
+      double get_point_value_y () {return point_value.y;}
+      double get_point_value_z () {return point_value.z;}
+      int get_point_value_dim () {return point_value.dim;}
       double get_point_distance (keywordPair *);
       bool is_close_point (keywordPair *);
+      bool is_close_point (double, double, double);
+      double distance_to_point (double, double, double);
       double get_dbl_value () {return dbl_value;}
       bool get_bool_value () {return bool_value;}
-      bool dbl_compare(keywordPair *a);
-      bool value_compare(keywordPair *a);
-      bool point_compare(keywordPair *a);
-
+      bool int_compare (keywordPair *);
+      bool dbl_compare (keywordPair *);
+      bool value_compare (keywordPair *);
+      bool point_compare (keywordPair *);
       bool loadBool (string *, string *, int);
       bool loadInt (string *, string *, int);
       bool loadDouble (string *, string *, int);
       bool loadPoint (int, string *, string *, int);
-      bool int_limit_checks(string *, int);
-      bool dbl_limit_checks(string *, int);
-      bool point_limit_checks(string *, int);
+      bool int_limit_checks (string *, int);
+      bool dbl_limit_checks (string *, int);
+      bool point_limit_checks (string *, int);
       bool limit_check (string);
 
       void copy (keywordPair a);
       keywordPair* clone ();
 
-      bool is_any() {
+      bool is_any () {
          if (value.compare("any") == 0) return true;
          return false;
       }
-      void print();
+      void print ();
 };
 
 #endif
