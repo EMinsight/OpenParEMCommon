@@ -29,12 +29,30 @@ errorNumbers.sort()
 
 k=0
 while k < len(errorNumbers):
-   if (k < len(errorNumbers)-1):
-      if (errorNumbers[k] == errorNumbers[k+1]):
-         print ("duplicate "+errorNumbers[k])
-   if (k < len(errorNumbers)-1):
-      if (int(errorNumbers[k+1]) != int(errorNumbers[k])+1):
-         print ("missing " + str(int(errorNumbers[k])+1))
-   print (errorNumbers[k])
+   i=k+1
+   while i < len(errorNumbers):
+      if (errorNumbers[k] == errorNumbers[i]):
+         print ("duplicate "+str(errorNumbers[k]))
+      i=i+1
    k=k+1
+
+error=int(errorNumbers[0])
+k=0
+while k < len(errorNumbers):
+   found=False
+   i=0
+   while i < len(errorNumbers):
+      if (int(errorNumbers[i]) == error):
+         found=True
+         break
+      i=i+1
+
+   if (not found):
+      print ("missing "+str(error))
+
+   error=error+1
+   k=k+1
+
+print ("last error " + errorNumbers[len(errorNumbers)-1])
+print (str(len(errorNumbers)) + " error messages processed")
 

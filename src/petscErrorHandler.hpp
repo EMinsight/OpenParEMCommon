@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM3D - A fullwave 3D electromagnetic simulator.                  //
-//    Copyright (C) 2024 Brian Young                                          //
+//    Copyright (C) 2025 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -24,6 +24,7 @@
 #include "petscsys.h"
 #include <iostream>
 #include <chrono>
+#include "prefix.h"
 
 using namespace std;
 

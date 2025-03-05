@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2024 Brian Young                                          //
+//    Copyright (C) 2025 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -19,6 +19,159 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "OpenParEMmaterials.hpp"
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// struct point
+///////////////////////////////////////////////////////////////////////////////////////////
+
+struct point set_point (double x, double y, double z, int dim)
+{
+   struct point a;
+   a.dim=dim;
+   a.x=x;
+   a.y=y;
+   a.z=z;
+   return a;
+}
+
+struct point point_copy (struct point a)
+{
+   struct point b;
+   b.dim=a.dim;
+   b.x=a.x;
+   b.y=a.y;
+   b.z=a.z;
+   return b;
+}
+
+// c=a-b
+struct point point_subtraction (struct point a, struct point b)
+{
+   struct point c;
+
+   if (a.dim != b.dim) {
+      c.dim=a.dim; c.x=-DBL_MAX; c.y=-DBL_MAX; c.z=-DBL_MAX;
+      return c;
+   }
+
+   c.dim=a.dim;
+   c.x=a.x-b.x;
+   c.y=a.y-b.y;
+   c.z=a.z-b.z;
+
+   return c;
+}
+
+// c=a+b
+struct point point_addition (struct point a, struct point b)
+{
+   struct point c;
+
+   if (a.dim != b.dim) {
+      c.dim=a.dim; c.x=-DBL_MAX; c.y=-DBL_MAX; c.z=-DBL_MAX;
+      return c;
+   }
+
+   c.dim=a.dim;
+   c.x=a.x+b.x;
+   c.y=a.y+b.y;
+   c.z=a.z+b.z;
+
+   return c;
+}
+
+// c=alpha*a
+struct point point_scale (double alpha, struct point a)
+{
+   struct point c;
+
+   c.dim=a.dim;
+   c.x=alpha*a.x;
+   c.y=alpha*a.y;
+   c.z=alpha*a.z;
+
+   return c;
+}
+
+// (a+b)/2
+struct point point_midpoint (struct point a, struct point b)
+{
+   struct point c;
+
+   if (a.dim != b.dim) {
+      c.dim=a.dim; c.x=-DBL_MAX; c.y=-DBL_MAX; c.z=-DBL_MAX;
+      return c;
+   }
+
+   c=point_scale(0.5,point_addition(a,b));
+
+   return c;
+}
+
+// c=axb
+struct point point_cross_product (struct point a, struct point b)
+{
+   struct point c;
+
+   if (a.dim != b.dim) {
+      c.dim=a.dim; c.x=-DBL_MAX; c.y=-DBL_MAX; c.z=-DBL_MAX;
+      return c;
+   }
+
+   if (a.dim == 2) {
+      c.dim=3;
+      c.x=0;
+      c.y=0;
+      c.z=a.x*b.y-b.x*a.y;
+   } else {
+      c.dim=3;
+      c.x=a.y*b.z-b.y*a.z;
+      c.y=-a.x*b.z+b.x*a.z;
+      c.z=a.x*b.y-b.x*a.y;
+   }
+
+   return c;
+}
+
+// c=a.b
+double point_dot_product (struct point a, struct point b)
+{
+   if (a.dim != b.dim) return -DBL_MAX;
+   double dotproduct=a.x*b.x+a.y*b.y;
+   if (a.dim == 3) dotproduct+=a.z*b.z;
+   return dotproduct;
+}
+
+// c=mag(a)
+double point_magnitude (struct point a)
+{
+   if (a.dim == 2) return sqrt(pow(a.x,2)+pow(a.y,2));
+   return sqrt(pow(a.x,2)+pow(a.y,2)+pow(a.z,2));
+}
+
+struct point point_normalize (struct point a)
+{
+   return point_scale(1/point_magnitude(a),a);
+}
+
+bool point_comparison (struct point a, struct point b, double tolerance)
+{
+   if (a.dim != b.dim) return false;
+   if (!double_compare(a.x,b.x,tolerance)) return false;
+   if (!double_compare(a.y,b.y,tolerance)) return false;
+   if (a.dim == 3 && !double_compare(a.z,b.z,tolerance)) return false;
+   return true;
+}
+
+void point_print (struct point a)
+{
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"struct point:\n");
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   dim=%d\n",a.dim);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   x=%g\n",a.x);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   y=%g\n",a.y);
+   prefix(); PetscPrintf(PETSC_COMM_WORLD,"   z=%g\n",a.z);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // keywordPair
@@ -299,33 +452,30 @@ bool keywordPair::point_compare (keywordPair *a)
    return true;
 }
 
-double keywordPair::get_point_distance (keywordPair *a)
+double keywordPair::get_point_distance (keywordPair *p)
 {
-   if (get_point_value_dim() == 2) return sqrt(pow(get_point_value_x()-a->get_point_value_x(),2)+pow(get_point_value_y()-a->get_point_value_y(),2));
-   // dim == 3
-   return sqrt(pow(get_point_value_x()-a->get_point_value_x(),2)+pow(get_point_value_y()-a->get_point_value_y(),2)+pow(get_point_value_z()-a->get_point_value_z(),2));
+   if (point_value.dim != p->point_value.dim) return -DBL_MAX;
+   struct point a=get_point_value();
+   struct point b=p->get_point_value();
+   return point_magnitude(point_subtraction(a,b));
 }
 
 bool keywordPair::is_close_point (keywordPair *a)
 {
-   if (! double_compare(get_point_value_x(),a->get_point_value_x(),1e-12)) return false;
-   if (! double_compare(get_point_value_y(),a->get_point_value_y(),1e-12)) return false;
-   if (get_point_value_dim() == 3 && ! double_compare(get_point_value_z(),a->get_point_value_z(),1e-12)) return false;
-   return true;
+   return point_comparison(get_point_value(),a->get_point_value(),1e-12);
 }
 
 // note the change in tolerance from above
-bool keywordPair::is_close_point (double x, double y, double z)
+bool keywordPair::is_close_point (struct point p)
 {
-   if (! double_compare(get_point_value_x(),x,1e-8)) return false;
-   if (! double_compare(get_point_value_y(),y,1e-8)) return false;
-   if (! double_compare(get_point_value_z(),z,1e-8)) return false;
-   return true;
+   return point_comparison(get_point_value(),p,1e-8);
 }
 
-double keywordPair::distance_to_point (double x, double y, double z)
+double keywordPair::distance_to_point (struct point b)
 {
-   return sqrt(pow(get_point_value_x()-x,2)+pow(get_point_value_y()-y,2)+pow(get_point_value_z()-z,2));
+   struct point a=get_point_value();
+   a=point_subtraction(a,b);
+   return point_magnitude(a);
 }
 
 void keywordPair::copy (keywordPair a)

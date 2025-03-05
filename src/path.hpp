@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2024 Brian Young                                          //
+//    Copyright (C) 2025 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -35,10 +35,17 @@
 using namespace std;
 using namespace mfem;
 
-bool compare_xy (double, double, double, double, double);
-bool compare_xy (double*, double*, double*, double*, double*);
-bool compare_xyz (double, double, double, double, double, double, double);
-bool compare_xyz (double*, double*, double*, double*, double*, double*, double*);
+struct point point_copy (struct point);
+struct point point_subtraction (struct point, struct point);
+struct point point_addition (struct point, struct point);
+double point_magnitude (struct point);
+struct point point_cross_product (struct point, struct point);
+double point_dot_product (struct point, struct point);
+struct point point_cross_product (struct point, struct point);
+double point_magnitude (struct point);
+struct point point_normalize (struct point);
+bool point_comparison (struct point, struct point, double);
+void point_print (struct point);
 
 class Path {
    private:
@@ -47,12 +54,12 @@ class Path {
       keywordPair name;
       vector<keywordPair *> points;
       keywordPair closed;
-      double tol=1e-11; // 1e-12
+      double tol=1e-11; // 1e-11
       bool hasNormal;
-      double nx,ny,nz;
+      struct point normal;
       bool rotated;        // true if this path is rotated parallel to the x-y plane
-      double theta;        // rotation about z-axis
-      double phi;          // rotation about y-axis
+      double theta;        // angle from z-axis to the normal vector of the plane in which the path sits
+      double phi;          // rotation from the x-axis in the x-y plane to the normal vector of the plane
       double sin_theta_;
       double cos_theta_;
       double sin_phi_;
@@ -77,9 +84,8 @@ class Path {
       int get_endLine () {return endLine;}
       long unsigned int get_points_size () {return points.size();}
       keywordPair* get_point (long unsigned int i) {return points[i];}
-      double get_point_x (long unsigned int i);
-      double get_point_y (long unsigned int i);
-      double get_point_z (long unsigned int i);
+      void offset (struct point);
+      struct point get_point_value (long unsigned int);
       int get_point_dim (long unsigned int i) {return points[i]->get_point_value_dim();}
       void push_point (keywordPair *point) {points.push_back(point);}
       void pop_point () {points.pop_back();}
@@ -91,38 +97,40 @@ class Path {
       void unset_hasOutput () {hasOutput=false;}
       keywordPair* get_startPoint () {return points[0];}
       keywordPair* get_endPoint () {if (closed.get_bool_value()) return points[0]; return points[points.size()-1];}
-      long unsigned int is_segmentOnLine (double, double, double, double);
-      long unsigned int is_segmentOnLine (double, double, double, double, double, double);
-      bool does_line_intersect (double, double, double, double, double, double);
+      long unsigned int is_segmentOnLine (struct point, struct point);
+      bool does_line_intersect (struct point, struct point);
       bool is_path_overlap (Path *);
-      void subdivide2D (Path *);
-      void subdivide3D (Path *);
-      double sum_of_angles (double, double);
+      void subdivide (Path *);
+      double sum_of_angles (struct point);
       bool calculateNormal ();
+      struct point get_normal () {return normal;}
+      void set_normal (struct point normal_) {normal=point_copy(normal_);}
       bool is_rotated () {return rotated;}
       Path* rotateToXYplane ();
-      void rotatePoint (double *, double *, double *);
       void rotatePoint (double *, double *, double *, bool);
+      void rotatePoint (struct point *);
+      void rotatePoint (struct point *, bool);
       void rotateToPath (Path *);
       void rotateToPath (Path *, bool);
-      bool is_point_inside (double, double, double);
-      double distanceFromPoint (double, double, double);
-      bool is_point_interior (double, double, double);
+      bool is_point_on_path (struct point);
+      bool is_point_inside (struct point);
+      bool is_point_interior (struct point);
       bool is_path_inside (Path *);
       void test_is_point_inside_m ();
       void test_is_point_inside_mr ();
       void test_is_point_inside_sqr2 ();
       Path* clone ();
       void calculateBoundingBox ();
-      void get_normal (double *nx_, double *ny_, double *nz_) {*nx_=nx; *ny_=ny; *nz_=nz;}
       void print (string);
       bool output (ofstream *, int);
       bool snapToMeshBoundary (Mesh *);
       double area ();
       void reverseOrder ();
+      bool lineIntersects (struct point, struct point);
+      struct point getInsidePoint ();
 };
 
-bool mergePaths (vector<Path *> *, vector<long unsigned int> *, vector<bool> *, string, string, Path **);
+bool mergePaths (vector<Path *> *, vector<long unsigned int> *, vector<bool> *, string, string, Path **, double);
 
 #endif
 

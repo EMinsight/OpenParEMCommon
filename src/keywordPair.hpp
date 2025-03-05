@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2024 Brian Young                                          //
+//    Copyright (C) 2025 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -46,6 +46,15 @@ struct point {
    double z;
 };
 
+// ToDo: refactor the code in this file to use the new, more general, calculations using struct point below
+
+struct point set_point (double, double, double, int);
+struct point point_subtraction (struct point, struct point);
+struct point point_addition (struct point, struct point);
+struct point point_scale (double, struct point);
+struct point point_midpoint (struct point, struct point);
+struct point point_cross_product (struct point, struct point);
+
 class keywordPair
 {
    private:
@@ -75,8 +84,10 @@ class keywordPair
       void set_keyword (string a) {keyword=a;}
       void set_value (string a) {value=a;}
       void set_int_value (int i) {int_value=i;}
+      void set_point_value_dim (int dim_) {point_value.dim=dim_;}
       void set_point_value (double x, double y) {point_value.x=x; point_value.y=y; point_value.dim=2;}
       void set_point_value (double x, double y, double z) {point_value.x=x; point_value.y=y; point_value.z=z; point_value.dim=3;}
+      void set_point_value (struct point p) {point_value.x=p.x; point_value.y=p.y; point_value.z=p.z; point_value.dim=p.dim;}
       void set_dbl_value (double a) {dbl_value=a;}
       void set_bool_value (bool a) {bool_value=a;}
       void set_lineNumber (int a) {lineNumber=a;}
@@ -92,20 +103,17 @@ class keywordPair
       int get_lineNumber () {return lineNumber;}
       int get_int_value () {return int_value;}
       struct point get_point_value () {return point_value;}
-      double get_point_value_x () {return point_value.x;}
-      double get_point_value_y () {return point_value.y;}
-      double get_point_value_z () {return point_value.z;}
       int get_point_value_dim () {return point_value.dim;}
-      double get_point_distance (keywordPair *);
       bool is_close_point (keywordPair *);
-      bool is_close_point (double, double, double);
-      double distance_to_point (double, double, double);
+      bool is_close_point (struct point);
+      double distance_to_point (struct point);
       double get_dbl_value () {return dbl_value;}
       bool get_bool_value () {return bool_value;}
       bool int_compare (keywordPair *);
       bool dbl_compare (keywordPair *);
       bool value_compare (keywordPair *);
       bool point_compare (keywordPair *);
+      double get_point_distance (keywordPair *);
       bool loadBool (string *, string *, int);
       bool loadInt (string *, string *, int);
       bool loadDouble (string *, string *, int);

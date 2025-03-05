@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //    OpenParEM2D - A fullwave 2D electromagnetic simulator.                  //
-//    Copyright (C) 2024 Brian Young                                          //
+//    Copyright (C) 2025 Brian Young                                          //
 //                                                                            //
 //    This program is free software: you can redistribute it and/or modify    //
 //    it under the terms of the GNU General Public License as published by    //
@@ -246,13 +246,13 @@ void reset_attributes (Mesh *mesh, ParMesh *pmesh, MeshMaterialList *meshMateria
 
    // make a list of unique attributes then sort
 
-   int NE;
+   int NE=-1;
    if (mesh) NE=mesh->GetNE();
    if (pmesh) NE=pmesh->GetNE();
 
    int i=0;
    while (i < NE) {
-      int attribute;
+      int attribute=-1;
       if (mesh) attribute=mesh->GetAttribute(i);
       if (pmesh) attribute=pmesh->GetAttribute(i);
       push_if_unique (&attributes,attribute);
@@ -335,7 +335,7 @@ void reset_attributes (Mesh *mesh, ParMesh *pmesh, MeshMaterialList *meshMateria
       // update the mesh
       int j=0;
       while (j < NE) {
-         int attribute;
+         int attribute=-1;
          if (mesh) attribute=mesh->GetAttribute(j);
          if (pmesh) attribute=pmesh->GetAttribute(j);
          if (attribute == attributes[k]) {
